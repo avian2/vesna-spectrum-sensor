@@ -38,7 +38,12 @@
 #include "version.h"
 
 #define USART_BUFFER_SIZE		128
-#define DATA_BUFFER_SIZE		26000
+
+#ifdef FUNC_COVARIANCE
+#  define DATA_BUFFER_SIZE		500
+#else
+#  define DATA_BUFFER_SIZE		26000
+#endif
 
 static char usart_buffer[USART_BUFFER_SIZE];
 static int usart_buffer_len = 0;

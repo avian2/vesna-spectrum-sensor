@@ -40,6 +40,11 @@
 
 #include "device-tda18219.h"
 
+#ifdef FUNC_COVARIANCE
+#  define NSAMPLES	25000
+static uint16_t sample_buffer[NSAMPLES];
+#endif
+
 enum state_t {
 	OFF,
 	SET_FREQUENCY,
@@ -331,6 +336,26 @@ static enum state_t dev_tda18219_state_read_measurement(struct vss_task* task)
 	}
 }
 
+#ifdef FUNC_COVARIANCE
+static int dev_tda18219_baseband_sample_covariance(power_t* data, struct vss_task* task)
+{
+	int r = vss_adc_get_input_samples(sample_buffer, NSAMPLES);
+
+	vss_covariance(sample_buffer, NSAMPLES,
+			data, task->sweep_config->n_average);
+
+	return r;
+}
+#else
+static int dev_tda18219_baseband_sample_null(power_t* data, struct vss_task* task)
+{
+	assert(sizeof(*data) == sizeof(uint16_t));
+
+	return vss_adc_get_input_samples((uint16_t*) data,
+			task->sweep_config->n_average);
+}
+#endif
+
 static enum state_t dev_tda18219_state_baseband_sample(struct vss_task* task)
 {
 	/* We force-suspend the task here, because this gives a more
@@ -347,8 +372,11 @@ static enum state_t dev_tda18219_state_baseband_sample(struct vss_task* task)
 		return BASEBAND_SAMPLE;
 	}
 
-	r = vss_adc_get_input_samples((uint16_t*) data,
-			current_task->sweep_config->n_average);
+#ifdef FUNC_COVARIANCE
+	r = dev_tda18219_baseband_sample_covariance(data, task);
+#else
+	r = dev_tda18219_baseband_sample_null(data, task);
+#endif
 	if(r) {
 		vss_task_set_error(task,
 				"vss_adc_get_input_samples returned an error");
@@ -478,7 +506,11 @@ static const struct calibration_point* dev_tda18219_get_calibration(
 }
 
 static const struct vss_device dev_tda18219 = {
+#ifdef FUNC_COVARIANCE
+	.name = "tda18219hn (covariance-func)",
+#else
 	.name = "tda18219hn",
+#endif
 
 	.status			= dev_tda18219_status,
 	.run			= dev_tda18219_run,

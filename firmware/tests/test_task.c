@@ -284,7 +284,11 @@ void test_read_sample(void)
 	cnt = 0;
 	while(vss_task_read_parse(&ctx, &timestamp, &channel, &power) == VSS_OK) {
 		TEST_ASSERT_EQUAL(0xdeadbeef, timestamp);
-		TEST_ASSERT_EQUAL(0x0101, power);
+		if(sizeof(power_t) == 2) {
+			TEST_ASSERT_EQUAL(0x0101, power);
+		} else {
+			TEST_ASSERT_EQUAL(0x01010101, power);
+		}
 		TEST_ASSERT_EQUAL(0, channel);
 		cnt++;
 	}
