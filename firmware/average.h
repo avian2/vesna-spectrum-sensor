@@ -23,8 +23,8 @@
 
 #include "buffer.h"
 
-power_t vss_average(power_t* buffer, size_t len);
-power_t vss_signal_power(uint16_t* buffer, size_t len);
+power_t vss_average(const power_t* buffer, size_t len);
+power_t vss_signal_power(const uint16_t* buffer, size_t len);
 int vss_covariance(const uint16_t* buffer, size_t len, int* cov, size_t l);
 
 #endif
