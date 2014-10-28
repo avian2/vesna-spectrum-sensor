@@ -131,3 +131,62 @@ void test_signal_power_max(void)
 
 	TEST_ASSERT_EQUAL(0, power);
 }
+
+
+void test_covariance_dc_max(void)
+{
+	int size = 25000;
+	uint16_t samples[size];
+	int l = 20;
+	int cov[l];
+
+	int n;
+	for(n = 0; n < size; n++) samples[n] = 4095;
+
+	vss_covariance(samples, size, cov, l);
+
+	int l0;
+	for(l0 = 0; l0 < l; l0++) {
+		TEST_ASSERT_EQUAL(0, cov[l0]);
+	}
+}
+
+void test_covariance_dc_min(void)
+{
+	int size = 25000;
+	uint16_t samples[size];
+	int l = 20;
+	int cov[l];
+
+	int n;
+	for(n = 0; n < size; n++) samples[n] = 0;
+
+	vss_covariance(samples, size, cov, l);
+
+	int l0;
+	for(l0 = 0; l0 < l; l0++) {
+		TEST_ASSERT_EQUAL(0, cov[l0]);
+	}
+}
+
+void test_covariance_power_max(void)
+{
+	int size = 25000;
+	uint16_t samples[size];
+	int l = 20;
+	int cov[l];
+
+	int n;
+	for(n = 0; n < size; n++) samples[n] = 4095 * (n%2);
+
+	vss_covariance(samples, size, cov, l);
+
+	int l0;
+	for(l0 = 0; l0 < l; l0++) {
+		if(l0 % 2 == 0) {
+			TEST_ASSERT_EQUAL(4192256, cov[l0]);
+		} else {
+			TEST_ASSERT_EQUAL(-4192256, cov[l0]);
+		}
+	}
+}
