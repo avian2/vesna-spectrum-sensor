@@ -87,10 +87,20 @@ struct vss_task {
 	unsigned int overflows;
 };
 
+struct vss_task_block {
+	uint32_t timestamp;
+	unsigned int channel;
+	power_t data[0];
+};
+
 /** @brief Result of a buffer read operation. */
 struct vss_task_read_result {
+	struct vss_task* task;
+
+	const struct vss_task_block* block;
+
 	/** @brief Pointer for reading from buffer. */
-	power_t* read_ptr;
+	const power_t* read_ptr;
 
 	/** @brief Current channel being read from the buffer. */
 	unsigned int read_channel;
@@ -131,9 +141,9 @@ int vss_task_stop(struct vss_task* task);
 enum vss_task_state vss_task_get_state(struct vss_task* task);
 const char* vss_task_get_error(struct vss_task* task);
 
-void vss_task_read(struct vss_task* task, struct vss_task_read_result* ctx);
-int vss_task_read_parse(struct vss_task* task, struct vss_task_read_result *ctx,
-		uint32_t* timestamp, int* channel, power_t* power);
+int vss_task_read(struct vss_task* task, struct vss_task_read_result* ctx);
+int vss_task_read_parse(struct vss_task_read_result *ctx,
+		uint32_t* timestamp, unsigned int* channel, power_t* power);
 
 /** @} */
 
@@ -143,13 +153,14 @@ int vss_task_read_parse(struct vss_task* task, struct vss_task_read_result *ctx,
 
 unsigned int vss_task_get_channel(struct vss_task* task);
 unsigned int vss_task_get_n_average(struct vss_task* task);
-int vss_task_insert(struct vss_task* device_run, power_t data,
-							uint32_t timestamp);
-void vss_task_set_error(struct vss_task* task, const char* msg);
 
-int vss_task_reserve_block(struct vss_task* task, power_t** data,
+int vss_task_insert_sweep(struct vss_task* device_run, power_t data,
 							uint32_t timestamp);
-int vss_task_write_block(struct vss_task* task);
+int vss_task_reserve_sample(struct vss_task* task, power_t** data,
+							uint32_t timestamp);
+int vss_task_write_sample(struct vss_task* task);
+
+void vss_task_set_error(struct vss_task* task, const char* msg);
 
 /** @} */
 

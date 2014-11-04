@@ -16,10 +16,11 @@
 
 /* Author: Tomaz Solc, <tomaz.solc@ijs.si> */
 #include "average.h"
+#include "vss.h"
 
 #include <math.h>
 
-power_t vss_average(power_t* buffer, size_t len)
+power_t vss_average(const power_t* buffer, size_t len)
 {
 	int acc = 0;
 
@@ -31,7 +32,7 @@ power_t vss_average(power_t* buffer, size_t len)
 	return acc / (int) len;
 }
 
-power_t vss_signal_power(uint16_t* buffer, size_t len)
+power_t vss_signal_power(const uint16_t* buffer, size_t len)
 {
 	int acc = 0;
 	size_t n;
@@ -52,4 +53,26 @@ power_t vss_signal_power(uint16_t* buffer, size_t len)
 	} else {
 		return 100.*(10.*log10(pacc / len) - 90.31);
 	}
+}
+
+int vss_covariance(const uint16_t* buffer, size_t len, int* cov, size_t l)
+{
+	unsigned l0, n;
+
+	int mean = 0;
+	for(n = 0; n < len; n++) {
+		mean += buffer[n];
+	}
+
+	mean /= len;
+
+	for(l0 = 0; l0 < l; l0++) {
+		long long acc = 0;
+		for(n = 0; n < len-l0; n++) {
+			acc += ((int) buffer[n] - mean) * ((int) buffer[n+l0] - mean);
+		}
+		cov[l0] = acc/((int) len-l0);
+	}
+
+	return VSS_OK;
 }

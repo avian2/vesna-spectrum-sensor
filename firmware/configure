@@ -36,6 +36,12 @@ case "$MODEL" in
 		DEFS="TUNER_TDA18219 MODEL_SNE_ESHTER"
 		;;
 
+	sne-eshter-cov)
+		LIBS="-ltda18219"
+		OBJS="$TDA18219_OBJS eeprom.o"
+		DEFS="TUNER_TDA18219 MODEL_SNE_ESHTER FUNC_COVARIANCE"
+		;;
+
 	sne-ismtv-868)
 		OBJS="platform/cc.o devices/device-cc.o"
 		DEFS="TUNER_CC MODEL_SNE_ISMTV_868"

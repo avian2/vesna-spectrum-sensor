@@ -56,12 +56,12 @@ static const struct vss_sweep_config sweep_config = {
 	.n_average = 10
 };
 
-static const struct vss_sweep_config sample_config = {
+static const struct vss_sweep_config sweep_config_one = {
 	.device_config = &device_config,
 
 	.channel_start = 0,
-	.channel_stop = 0,
-	.channel_step = 0,
+	.channel_stop = 1,
+	.channel_step = 1,
 	.n_average = 10
 };
 
@@ -86,16 +86,18 @@ void test_start(void)
 	TEST_ASSERT_EQUAL(VSS_DEVICE_RUN_RUNNING, vss_task_get_state(&run));
 }
 
-void test_single_run(void)
+void test_single_run_sweep(void)
 {
 	const power_t v = 0x70fe;
 
-	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, 1, buffer_data);
+	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, 2, buffer_data);
 	vss_task_start(&run);
 
 	int cnt = 0;
 	while(1) {
-		int r = vss_task_insert(&run, v, 0xdeadbeef);
+		int ch = vss_task_get_channel(&run);
+		TEST_ASSERT_EQUAL(cnt%10, ch);
+		int r = vss_task_insert_sweep(&run, v, 0xdeadbeef);
 		if(r == VSS_OK) {
 			cnt++;
 		} else if(r == VSS_STOP) {
@@ -106,24 +108,52 @@ void test_single_run(void)
 		}
 	}
 
-	TEST_ASSERT_EQUAL(10, cnt);
+	TEST_ASSERT_EQUAL(20, cnt);
 }
 
-void test_single_run_block(void)
+void test_single_run_sweep_one_channel(void)
 {
-	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, 5, buffer_data);
+	const power_t v = 0x70fe;
+
+	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config_one, 2, buffer_data);
 	vss_task_start(&run);
 
 	int cnt = 0;
 	while(1) {
-		power_t *wptr;
+		//int ch = vss_task_get_channel(&run);
+		//TEST_ASSERT_EQUAL(0, ch);
+		int r = vss_task_insert_sweep(&run, v, 0xdeadbeef);
+		if(r == VSS_OK) {
+			cnt++;
+		} else if(r == VSS_STOP) {
+			cnt++;
+			break;
+		} else {
+			break;
+		}
+	}
 
-		int r = vss_task_reserve_block(&run, &wptr, 0xdeadbeef);
+	TEST_ASSERT_EQUAL(2, cnt);
+}
+
+
+void test_single_run_block(void)
+{
+	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, 2, buffer_data);
+	vss_task_start(&run);
+
+	int cnt = 0;
+	while(1) {
+		int ch = vss_task_get_channel(&run);
+		TEST_ASSERT_EQUAL(cnt%10, ch);
+
+		power_t *wptr;
+		int r = vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
 		TEST_ASSERT_EQUAL(VSS_OK, r);
 
 		memset(wptr, 0x01, sweep_config.n_average*sizeof(*wptr));
 
-		r = vss_task_write_block(&run);
+		r = vss_task_write_sample(&run);
 		if(r == VSS_OK) {
 			cnt++;
 		} else if(r == VSS_STOP) {
@@ -134,7 +164,7 @@ void test_single_run_block(void)
 		}
 	}
 
-	TEST_ASSERT_EQUAL(5, cnt);
+	TEST_ASSERT_EQUAL(20, cnt);
 }
 
 
@@ -147,19 +177,48 @@ void test_infinite_run(void)
 
 	int cnt, r;
 	for(cnt = 0; cnt < 100; cnt++) {
-		r = vss_task_insert(&run, v, 0xdeadbeef);
+		r = vss_task_insert_sweep(&run, v, 0xdeadbeef);
 		TEST_ASSERT_EQUAL(VSS_OK, r);
 	}
 
 	vss_task_stop(&run);
 
 	for(cnt = 0; cnt < 100; cnt++) {
-		r = vss_task_insert(&run, v, 0xdeadbeef);
+		r = vss_task_insert_sweep(&run, v, 0xdeadbeef);
 		if(r != VSS_OK) break;
 	}
 
 	TEST_ASSERT_EQUAL(VSS_STOP, r);
 	TEST_ASSERT_TRUE(cnt <= 10);
+	TEST_ASSERT_EQUAL(VSS_DEVICE_RUN_FINISHED, vss_task_get_state(&run));
+}
+
+void test_infinite_run_block(void)
+{
+	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, -1, buffer_data);
+	vss_task_start(&run);
+
+	int cnt, r;
+	for(cnt = 0; cnt < 50; cnt++) {
+		power_t *wptr;
+		r = vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
+		TEST_ASSERT_EQUAL(VSS_OK, r);
+		r = vss_task_write_sample(&run);
+		TEST_ASSERT_EQUAL(VSS_OK, r);
+	}
+
+	vss_task_stop(&run);
+
+	for(cnt = 0; cnt < 50; cnt++) {
+		power_t *wptr;
+		r = vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
+		TEST_ASSERT_EQUAL(VSS_OK, r);
+		r = vss_task_write_sample(&run);
+		if(r != VSS_OK) break;
+	}
+
+	TEST_ASSERT_EQUAL(VSS_STOP, r);
+	TEST_ASSERT_TRUE(cnt <= 1);
 	TEST_ASSERT_EQUAL(VSS_DEVICE_RUN_FINISHED, vss_task_get_state(&run));
 }
 
@@ -172,23 +231,27 @@ void test_read(void)
 
 	int cnt;
 	for(cnt = 0; cnt < 10; cnt++) {
-		vss_task_insert(&run, v, 0xdeadbeef);
+		vss_task_insert_sweep(&run, v, 0xdeadbeef);
 	}
 
 	struct vss_task_read_result ctx;
-	vss_task_read(&run, &ctx);
+	int r = vss_task_read(&run, &ctx);
 
-	int channel;
+	TEST_ASSERT_EQUAL(VSS_OK, r);
+
+	TEST_ASSERT_EQUAL(0xdeadbeef, ctx.block->timestamp);
+	TEST_ASSERT_EQUAL(0, ctx.block->channel);
+
+	unsigned int channel;
 	uint32_t timestamp;
 	power_t power;
 
 	cnt = 0;
-	while(vss_task_read_parse(&run, &ctx, &timestamp, &channel, &power) == VSS_OK) {
-		if(channel != -1) {
-			TEST_ASSERT_EQUAL(0xdeadbeef, timestamp);
-			TEST_ASSERT_EQUAL(v, power);
-			cnt++;
-		}
+	while(vss_task_read_parse(&ctx, &timestamp, &channel, &power) == VSS_OK) {
+		TEST_ASSERT_EQUAL(0xdeadbeef, timestamp);
+		TEST_ASSERT_EQUAL(v, power);
+		TEST_ASSERT_EQUAL(cnt, channel);
+		cnt++;
 	}
 
 	TEST_ASSERT_EQUAL(10, cnt);
@@ -196,32 +259,38 @@ void test_read(void)
 
 void test_read_sample(void)
 {
-	vss_task_init(&run, VSS_TASK_SAMPLE, &sample_config, -1, buffer_data);
+	vss_task_init(&run, VSS_TASK_SAMPLE, &sweep_config_one, -1, buffer_data);
 	vss_task_start(&run);
 
 	int cnt;
 	for(cnt = 0; cnt < 2; cnt++) {
 		power_t *wptr;
-		vss_task_reserve_block(&run, &wptr, 0xdeadbeef);
+		vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
 		memset(wptr, 0x01, sweep_config.n_average*sizeof(*wptr));
-		vss_task_write_block(&run);
+		vss_task_write_sample(&run);
 	}
 
 	struct vss_task_read_result ctx;
-	vss_task_read(&run, &ctx);
+	int r = vss_task_read(&run, &ctx);
 
-	int channel;
+	TEST_ASSERT_EQUAL(VSS_OK, r);
+	TEST_ASSERT_EQUAL(0xdeadbeef, ctx.block->timestamp);
+	TEST_ASSERT_EQUAL(0, ctx.block->channel);
+
+	unsigned int channel;
 	uint32_t timestamp;
 	power_t power;
 
 	cnt = 0;
-	while(vss_task_read_parse(&run, &ctx, &timestamp, &channel, &power) == VSS_OK) {
-		if(channel != -1) {
-			TEST_ASSERT_EQUAL(0xdeadbeef, timestamp);
+	while(vss_task_read_parse(&ctx, &timestamp, &channel, &power) == VSS_OK) {
+		TEST_ASSERT_EQUAL(0xdeadbeef, timestamp);
+		if(sizeof(power_t) == 2) {
 			TEST_ASSERT_EQUAL(0x0101, power);
-			TEST_ASSERT_EQUAL(0, channel);
-			cnt++;
+		} else {
+			TEST_ASSERT_EQUAL(0x01010101, power);
 		}
+		TEST_ASSERT_EQUAL(0, channel);
+		cnt++;
 	}
 
 	TEST_ASSERT_EQUAL(10, cnt);
@@ -235,7 +304,7 @@ void test_get_channel(void)
 	int channel = vss_task_get_channel(&run);
 	TEST_ASSERT_EQUAL(sweep_config.channel_start, channel);
 
-	vss_task_insert(&run, 0, 0);
+	vss_task_insert_sweep(&run, 0, 0);
 
 	channel = vss_task_get_channel(&run);
 	TEST_ASSERT_EQUAL(sweep_config.channel_start + sweep_config.channel_step, channel);
@@ -288,7 +357,7 @@ void test_overflow(void)
 
 	int n;
 	for(n = 0; n < buffer_data_len+100; n++) {
-		vss_task_insert(&run, v, 0xdeadbeef);
+		vss_task_insert_sweep(&run, v, 0xdeadbeef);
 	}
 
 	TEST_ASSERT_EQUAL(VSS_DEVICE_RUN_SUSPENDED, vss_task_get_state(&run));
@@ -297,15 +366,15 @@ void test_overflow(void)
 	struct vss_task_read_result ctx;
 	vss_task_read(&run, &ctx);
 
-	int channel;
+	unsigned int channel;
 	uint32_t timestamp;
 	power_t power;
 
-	while(!vss_task_read_parse(&run, &ctx, &timestamp, &channel, &power));
+	while(!vss_task_read_parse(&ctx, &timestamp, &channel, &power));
 
 	TEST_ASSERT_EQUAL(VSS_DEVICE_RUN_RUNNING, vss_task_get_state(&run));
 	TEST_ASSERT_EQUAL(1, resume_called);
 
-	n = vss_task_insert(&run, v, 0xdeadbeef);
+	n = vss_task_insert_sweep(&run, v, 0xdeadbeef);
 	TEST_ASSERT_EQUAL(VSS_OK, n);
 }

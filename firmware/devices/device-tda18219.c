@@ -40,6 +40,11 @@
 
 #include "device-tda18219.h"
 
+#ifdef FUNC_COVARIANCE
+#  define NSAMPLES	25000
+static uint16_t sample_buffer[NSAMPLES];
+#endif
+
 enum state_t {
 	OFF,
 	SET_FREQUENCY,
@@ -51,6 +56,7 @@ enum state_t {
 
 static enum state_t current_state = OFF;
 static struct vss_task* current_task = NULL;
+static int current_freq = -1;
 
 struct dev_tda18219_priv {
 	const struct tda18219_standard* standard;
@@ -58,6 +64,8 @@ struct dev_tda18219_priv {
 	int adc_source;
 	int bwsel;
 };
+
+static enum state_t dev_tda18219_state(struct vss_task* task, enum state_t state);
 
 static int get_input_power_bband(int* rssi_dbm_100, unsigned int n_average)
 {
@@ -179,6 +187,8 @@ static int vss_device_tda18219_init(void)
 
 int dev_tda18219_turn_on(const struct dev_tda18219_priv* priv)
 {
+	current_freq = -1;
+
 	int r;
 	r = vss_dac_set_bbgain(70);
 	if(r) return r;
@@ -233,12 +243,8 @@ static int dev_tda18219_stop(void)
 	return dev_tda18219_turn_off();
 }
 
-enum state_t dev_tda18219_state(struct vss_task* task, enum state_t state)
+static int dev_tda18219_get_freq(struct vss_task* task)
 {
-	if(state == OFF) {
-		return OFF;
-	}
-
 	const struct vss_device_config* device_config = task->sweep_config->device_config;
 	const struct dev_tda18219_priv* priv = device_config->priv;
 
@@ -250,94 +256,161 @@ enum state_t dev_tda18219_state(struct vss_task* task, enum state_t state)
 		freq -= (8000000 - device_config->channel_bw_hz)/2;
 	}
 
+	return freq;
+}
+
+static enum state_t dev_tda18219_state_set_frequency(struct vss_task* task)
+{
+	enum state_t next;
+	if(task->type == VSS_TASK_SWEEP) {
+		next = RUN_MEASUREMENT;
+	} else {
+		next = BASEBAND_SAMPLE;
+	}
+
+	const struct dev_tda18219_priv* priv = task->sweep_config->device_config->priv;
+
+	int freq = dev_tda18219_get_freq(task);
+	if(freq != current_freq) {
+		int r = tda18219_set_frequency(priv->standard, freq);
+		if(r) {
+			vss_task_set_error(task,
+					"tda18219_set_frequency() returned an error");
+			dev_tda18219_stop();
+			return OFF;
+		}
+
+		current_freq = freq;
+
+		return next;
+	} else {
+		/* we don't need to set the frequency - just execute the
+		 * next state directly */
+		return dev_tda18219_state(task, next);
+	}
+}
+
+static enum state_t dev_tda18219_state_run_measurement(struct vss_task* task)
+{
+	int r = tda18219_get_input_power_prepare();
+	if(r) {
+		vss_task_set_error(task,
+				"tda18219_get_input_power_prepare() returned an error");
+		dev_tda18219_stop();
+		return OFF;
+	}
+	return READ_MEASUREMENT;
+}
+
+static enum state_t dev_tda18219_state_read_measurement(struct vss_task* task)
+{
+	const struct dev_tda18219_priv* priv = task->sweep_config->device_config->priv;
+
 	int rssi_dbm_100;
+	int r = get_input_power(&rssi_dbm_100,
+			vss_task_get_n_average(task),
+			priv->adc_source);
+	if(r) {
+		vss_task_set_error(task,
+				"get_input_power() returned an error");
+		dev_tda18219_stop();
+		return OFF;
+	}
+
+	assert(current_freq != -1);
+
+	// extra offset determined by measurement
+	int calibration = get_calibration(current_freq / 1000);
+
+	rssi_dbm_100 -= calibration;
+
+	r = vss_task_insert_sweep(task, rssi_dbm_100, vss_rtc_read());
+
+	if(r == VSS_OK) {
+		return dev_tda18219_state(task, SET_FREQUENCY);
+	} else if(r == VSS_SUSPEND) {
+		return READ_MEASUREMENT;
+	} else {
+		dev_tda18219_stop();
+		return OFF;
+	}
+}
+
+#ifdef FUNC_COVARIANCE
+static int dev_tda18219_baseband_sample_covariance(power_t* data, struct vss_task* task)
+{
+	int r = vss_adc_get_input_samples(sample_buffer, NSAMPLES);
+
+	vss_covariance(sample_buffer, NSAMPLES,
+			data, task->sweep_config->n_average);
+
+	return r;
+}
+#else
+static int dev_tda18219_baseband_sample_null(power_t* data, struct vss_task* task)
+{
+	assert(sizeof(*data) == sizeof(uint16_t));
+
+	return vss_adc_get_input_samples((uint16_t*) data,
+			task->sweep_config->n_average);
+}
+#endif
+
+static enum state_t dev_tda18219_state_baseband_sample(struct vss_task* task)
+{
+	/* We force-suspend the task here, because this gives a more
+	 * consistent output. Baseband sampling practically always leads
+	 * to buffer overflow and the task gets suspended anyway. If we force
+	 * suspend after one block, we avoid the situation where there are
+	 * a bunch of closely-spaced blocks at the start, when the buffer
+	 * is still empty. */
+	task->state = VSS_DEVICE_RUN_SUSPENDED;
+
 	power_t* data;
-	int r;
+	int r = vss_task_reserve_sample(task, &data, vss_rtc_read());
+	if(r == VSS_SUSPEND) {
+		return BASEBAND_SAMPLE;
+	}
+
+#ifdef FUNC_COVARIANCE
+	r = dev_tda18219_baseband_sample_covariance(data, task);
+#else
+	r = dev_tda18219_baseband_sample_null(data, task);
+#endif
+	if(r) {
+		vss_task_set_error(task,
+				"vss_adc_get_input_samples returned an error");
+		dev_tda18219_stop();
+		return OFF;
+	}
+
+	r = vss_task_write_sample(task);
+	if(r) {
+		dev_tda18219_stop();
+		return OFF;
+	}
+
+	return SET_FREQUENCY;
+}
+
+static enum state_t dev_tda18219_state(struct vss_task* task, enum state_t state)
+{
+	if(state == OFF) {
+		return OFF;
+	}
 
 	switch(state) {
 		case SET_FREQUENCY:
-			r = tda18219_set_frequency(priv->standard, freq);
-			if(r) {
-				vss_task_set_error(task,
-						"tda18219_set_frequency() returned an error");
-				dev_tda18219_stop();
-				return OFF;
-			}
-			return RUN_MEASUREMENT;
+			return dev_tda18219_state_set_frequency(task);
 
 		case RUN_MEASUREMENT:
-			r = tda18219_get_input_power_prepare();
-			if(r) {
-				vss_task_set_error(task,
-						"tda18219_get_input_power_prepare() returned an error");
-				dev_tda18219_stop();
-				return OFF;
-			}
-			return READ_MEASUREMENT;
+			return dev_tda18219_state_run_measurement(task);
 
 		case READ_MEASUREMENT:
-
-			r = get_input_power(&rssi_dbm_100,
-					vss_task_get_n_average(task),
-					priv->adc_source);
-			if(r) {
-				vss_task_set_error(task,
-						"get_input_power() returned an error");
-				dev_tda18219_stop();
-				return OFF;
-			}
-
-			// extra offset determined by measurement
-			int calibration = get_calibration(freq / 1000);
-
-			rssi_dbm_100 -= calibration;
-
-			r = vss_task_insert(task, rssi_dbm_100, vss_rtc_read());
-
-			if(r == VSS_OK) {
-				return dev_tda18219_state(task, SET_FREQUENCY);
-			} else if(r == VSS_SUSPEND) {
-				return READ_MEASUREMENT;
-			} else {
-				dev_tda18219_stop();
-				return OFF;
-			}
-
-		case SET_FREQUENCY_ONCE:
-			r = tda18219_set_frequency(priv->standard, freq);
-			if(r) {
-				vss_task_set_error(task,
-						"tda18219_set_frequency() returned an error");
-				dev_tda18219_stop();
-				return OFF;
-			}
-			return BASEBAND_SAMPLE;
+			return dev_tda18219_state_read_measurement(task);
 
 		case BASEBAND_SAMPLE:
-
-			task->state = VSS_DEVICE_RUN_SUSPENDED;
-
-			r = vss_task_reserve_block(task, &data, vss_rtc_read());
-			if(r == VSS_SUSPEND) {
-				return BASEBAND_SAMPLE;
-			}
-
-			r = vss_adc_get_input_samples((uint16_t*) data,
-					current_task->sweep_config->n_average);
-			if(r) {
-				vss_task_set_error(task,
-						"vss_adc_get_input_samples returned an error");
-				dev_tda18219_stop();
-				return OFF;
-			}
-
-			r = vss_task_write_block(task);
-			if(r) {
-				dev_tda18219_stop();
-				return OFF;
-			}
-
-			return BASEBAND_SAMPLE;
+			return dev_tda18219_state_baseband_sample(task);
 
 		default:
 			return OFF;
@@ -366,11 +439,7 @@ int dev_tda18219_run(void* priv __attribute__((unused)), struct vss_task* task)
 
 	vss_rtc_reset();
 
-	if(task->type == VSS_TASK_SWEEP) {
-		current_state = dev_tda18219_state(task, SET_FREQUENCY);
-	} else {
-		current_state = dev_tda18219_state(task, SET_FREQUENCY_ONCE);
-	}
+	current_state = dev_tda18219_state(task, SET_FREQUENCY);
 
 	return VSS_OK;
 }
@@ -437,7 +506,11 @@ static const struct calibration_point* dev_tda18219_get_calibration(
 }
 
 static const struct vss_device dev_tda18219 = {
+#ifdef FUNC_COVARIANCE
+	.name = "tda18219hn (covariance-func)",
+#else
 	.name = "tda18219hn",
+#endif
 
 	.status			= dev_tda18219_status,
 	.run			= dev_tda18219_run,

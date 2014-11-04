@@ -38,7 +38,12 @@
 #include "version.h"
 
 #define USART_BUFFER_SIZE		128
-#define DATA_BUFFER_SIZE		20480
+
+#ifdef FUNC_COVARIANCE
+#  define DATA_BUFFER_SIZE		500
+#else
+#  define DATA_BUFFER_SIZE		26000
+#endif
 
 static char usart_buffer[USART_BUFFER_SIZE];
 static int usart_buffer_len = 0;
@@ -61,11 +66,11 @@ extern void (*const vector_table[]) (void);
 
 /* Set up all the peripherals */
 
-static void setup_usart(void)
+static void setup_usart(uint32_t usart)
 {
 	uint32_t baudrate;
 
-	if(VSS_UART == USART1) {
+	if(usart == USART1) {
 		/* GPIO pin for USART TX */
 		gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
 				GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO9);
@@ -95,18 +100,18 @@ static void setup_usart(void)
 	}
 
 	/* Setup USART parameters. */
-	usart_set_baudrate(VSS_UART, baudrate);
-	usart_set_databits(VSS_UART, 8);
-	usart_set_stopbits(VSS_UART, USART_STOPBITS_1);
-	usart_set_parity(VSS_UART, USART_PARITY_NONE);
-	usart_set_flow_control(VSS_UART, USART_FLOWCONTROL_NONE);
-	usart_set_mode(VSS_UART, USART_MODE_TX_RX);
+	usart_set_baudrate(usart, baudrate);
+	usart_set_databits(usart, 8);
+	usart_set_stopbits(usart, USART_STOPBITS_1);
+	usart_set_parity(usart, USART_PARITY_NONE);
+	usart_set_flow_control(usart, USART_FLOWCONTROL_NONE);
+	usart_set_mode(usart, USART_MODE_TX_RX);
 
-	/* Enable VSS_UART Receive interrupt. */
-	USART_CR1(VSS_UART) |= USART_CR1_RXNEIE;
+	/* Enable usart Receive interrupt. */
+	USART_CR1(usart) |= USART_CR1_RXNEIE;
 
 	/* Finally enable the USART. */
-	usart_enable(VSS_UART);
+	usart_enable(usart);
 }
 
 static void setup(void)
@@ -123,9 +128,9 @@ static void setup(void)
 			RCC_APB2ENR_AFIOEN);
 
 	uint8_t irqn;
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_USART1EN);
+
 	if(VSS_UART == USART1) {
-		rcc_peripheral_enable_clock(&RCC_APB2ENR,
-			RCC_APB2ENR_USART1EN);
 		irqn = NVIC_USART1_IRQ;
 	} else {
 		rcc_peripheral_enable_clock(&RCC_APB1ENR,
@@ -140,7 +145,14 @@ static void setup(void)
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ,
 			GPIO_CNF_OUTPUT_PUSHPULL, GPIO2);
 
-	setup_usart();
+	setup_usart(VSS_UART);
+	if(VSS_UART != USART1) {
+		setup_usart(USART1);
+	}
+
+	/* Setup watchdog */
+	iwdg_set_period_ms(10000);
+	iwdg_start();
 }
 
 static void led_on(void)
@@ -185,21 +197,33 @@ void usart3_isr(void)
 	usart_isr();
 }
 
+static int write(char *ptr, int len, uint32_t usart)
+{
+	int i;
+	for(i = 0; i < len; i++) {
+		usart_send_blocking(usart, ptr[i]);
+	}
+	return i;
+}
+
 /* Provide _write syscall used by libc */
 int _write(int file, char *ptr, int len)
 {
-	int i;
-
-	if (file == 1) {
+	if(file == 1) {
 		led_on();
-		for (i = 0; i < len; i++) {
-			usart_send_blocking(VSS_UART, ptr[i]);
-		}
+		int r = write(ptr, len, VSS_UART);
 		led_off();
-		return i;
+		return r;
 	} else {
 		errno = EIO;
 		return -1;
+	}
+}
+
+static void debug(char *ptr)
+{
+	if(VSS_UART != USART1) {
+		write(ptr, strlen(ptr), USART1);
 	}
 }
 
@@ -408,6 +432,8 @@ static void dispatch(char* cmdi)
 
 	char* cmd = trim(cmdi);
 
+	debug("dispatch: received command '"); debug(cmd); debug("'\n");
+
 	if (!strcmp(cmd, "help")) {
 		command_help();
 	} else if (!strcmp(cmd, "list")) {
@@ -428,7 +454,7 @@ static void dispatch(char* cmdi)
 	} else if (sscanf(cmd, "select channel %d config %d,%d",
 				&start,
 				&dev_id, &config_id) == 3) {
-		command_select(start, 0, start, dev_id, config_id);
+		command_select(start, 1, start+1, dev_id, config_id);
 	} else if (sscanf(cmd, "average %d",
 				&n_average) == 1) {
 		command_average(n_average);
@@ -446,6 +472,7 @@ static void dispatch(char* cmdi)
 		scb_reset_system();
 	} else {
 		printf("error: unknown command: %s\n", cmd);
+		debug("dispatch: unknown command\n");
 	}
 }
 
@@ -453,6 +480,7 @@ int main(void)
 {
 	setup();
 	printf("boot\n");
+	debug("boot\n");
 
 	int r = VSS_OK;
 #ifdef TUNER_TDA18219
@@ -476,35 +504,34 @@ int main(void)
 			usart_buffer_attn = 0;
 		}
 
-		IWDG_KR = IWDG_KR_RESET;
+		iwdg_reset();
 
 		int has_finished = (vss_task_get_state(&current_task) == VSS_DEVICE_RUN_FINISHED);
 
-		struct vss_task_read_result ctx;
-		vss_task_read(&current_task, &ctx);
-
-		int channel;
-		uint32_t timestamp;
-		power_t power;
-
 		int n = 0;
-		while(vss_task_read_parse(&current_task, &ctx,
-								&timestamp, &channel, &power) == VSS_OK) {
-			if(n == 0) {
-				printf("TS %ld.%03ld DS", timestamp/1000, timestamp%1000);
+
+		struct vss_task_read_result ctx;
+		if(vss_task_read(&current_task, &ctx) == VSS_OK) {
+
+			unsigned int channel = ctx.block->channel;
+			uint32_t timestamp = ctx.block->timestamp;
+			power_t power;
+
+			printf("TS %ld.%03ld CH %u DS", timestamp/1000,
+					timestamp%1000, channel);
+
+			while(vss_task_read_parse(&ctx, &timestamp, &channel, &power) == VSS_OK) {
+
+				if(current_task.type == VSS_TASK_SWEEP) {
+					printf(" %d.%02d", power/100, abs(power%100));
+				} else {
+					printf(" %d", power);
+				}
 			}
 
-			if(current_task.type == VSS_TASK_SWEEP) {
-				printf(" %d.%02d", power/100, abs(power%100));
-			} else {
-				printf(" %d", power);
-			}
-
-			n++;
-		}
-
-		if(n > 0) {
 			printf(" DE\n");
+			debug("main: wrote block report\n");
+			n = 1;
 		}
 
 		if(n == 0 && has_finished && has_started) {
@@ -519,6 +546,7 @@ int main(void)
 				}
 			}
 			has_started = 0;
+			debug("main: task finished\n");
 		}
 	}
 

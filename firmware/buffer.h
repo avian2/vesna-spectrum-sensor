@@ -28,11 +28,17 @@
 #ifndef HAVE_BUFFER_H
 #define HAVE_BUFFER_H
 
+#include "config.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
 /** @brief Type used for power measurements. */
+#ifdef FUNC_COVARIANCE
+typedef int power_t;
+#else
 typedef int16_t power_t;
+#endif
 
 /** @brief Circular buffer. */
 struct vss_buffer {

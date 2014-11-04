@@ -1,0 +1,116 @@
+#!/usr/bin/python
+import optparse
+import signal
+from vesna.spectrumsensor import SpectrumSensor, SweepConfig
+import logging
+import os
+import datetime
+
+log = logging.getLogger(__name__)
+
+want_stop = False
+
+def get_break_key():
+	return datetime.datetime.now().strftime("%Y%m%d%H")
+
+def cb(sweep_config, sweep):
+
+	fh = sweep_config.fh
+
+	fh.write('TS %f CH %d DS ' % (sweep.timestamp, sweep.channel))
+	fh.write(' '.join(map(str, sweep.data)))
+	fh.write(' DE\n')
+
+	return sweep_config.bk == get_break_key()
+
+def handler(signum, frame):
+	global want_stop
+	log.warning("Signal %d caught! Stopping scan..." % (signum,))
+	want_stop = True
+
+class Output:
+	def __init__(self, output_dir=None):
+		self.current_path = None
+		self.current_fh = None
+
+		if output_dir is None:
+			self.output_dir = datetime.datetime.now().strftime("./log_%Y%m%d_%H%M")
+		else:
+			self.output_dir = output_dir
+
+	def _get_path(self):
+		name = datetime.datetime.now().strftime("vesna_%Y%m%d.log")
+		path = os.path.join(self.output_dir, name)
+		return path
+
+	def get_fh(self):
+		path = self._get_path()
+		if self.current_path != path:
+			if self.current_fh is not None:
+				self.current_fh.close()
+				log.info("Rotating log file.")
+
+			self.current_path = path
+			self.current_fh = open(path, "w")
+
+		return self.current_fh
+
+def get_sweep_config(device_config, range):
+	start, step, stop = map(lambda x:int(x)*1e3, range.split(':'))
+
+	sweep_config = device_config.get_sweep_config(start, stop, step)
+	return sweep_config
+
+def main():
+	parser = optparse.OptionParser()
+
+	parser.add_option("-d", "--vesna-device", dest="vesna_device", metavar="DEVICE",
+			help="Use VESNA spectrum sensor attached to DEVICE.")
+	parser.add_option("-o", "--output", dest="output", metavar="DIR",
+			help="Directory where to save the log.")
+	parser.add_option("-r", "--range", dest="range", metavar="RANGE",
+			help="Range of frequencies to scan (in kHz, e.g. 470000:1000:860000)")
+	parser.add_option("-c", "--config", dest="config", metavar="CONFIG",
+			help="Device config to use (e.g. 0,2)")
+	parser.add_option("-n", "--samples", dest="nsamples", metavar="SAMPLES",
+			help="Number of samples to use", type="int", default="25000")
+
+	(options, args) = parser.parse_args()
+
+	output = Output(output_dir=options.output)
+	try:
+		os.mkdir(output.output_dir)
+	except OSError:
+		pass
+	logging.basicConfig(filename=os.path.join(output.output_dir, "log"), level=logging.DEBUG)
+
+	sensor = SpectrumSensor(options.vesna_device)
+
+	device_config_list = sensor.get_config_list()
+
+	dev_id, conf_id = map(int, options.config.split(','))
+	device_config = device_config_list.get_config(dev_id, conf_id)
+
+	sweep_config = get_sweep_config(device_config, options.range)
+	sweep_config.nsamples = options.nsamples
+
+	signal.signal(signal.SIGTERM, handler)
+	signal.signal(signal.SIGINT, handler)
+
+	log.info("Starting scan")
+
+	while not want_stop:
+		fh = output.get_fh()
+		sweep_config.fh = fh
+		sweep_config.bk = get_break_key()
+
+		log.info("Obtaining sensor status")
+		status = sensor.get_status(device_config)
+		fh.write(''.join(status))
+
+		log.info("Starting run")
+		sensor.sample_run(sweep_config, cb)
+		log.info("Stopped")
+
+	log.info("Stopping scan")
+main()
