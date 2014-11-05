@@ -121,3 +121,18 @@ class TestConfigList(unittest.TestCase):
 			    num: 1000
 			    time: 1 ms'''
 		), str(self.cl))
+
+from vesna.rftest import parse_test_kwargs
+
+class TestRFTest(unittest.TestCase):
+	def test_parse_test_kwargs_none(self):
+		self.assertEquals(parse_test_kwargs(None), {})
+
+	def test_parse_test_kwargs_int(self):
+		self.assertEquals(parse_test_kwargs("a=1"), {'a': 1})
+
+	def test_parse_test_kwargs_two_ints(self):
+		self.assertEquals(parse_test_kwargs("a=1,b=2"), {'a': 1, 'b': 2})
+
+	def test_parse_test_kwargs_list(self):
+		self.assertEquals(parse_test_kwargs("a=[1,2],b=2"), {'a': [1,2], 'b': 2})

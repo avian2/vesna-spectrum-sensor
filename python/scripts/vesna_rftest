@@ -8,7 +8,7 @@ import scipy.integrate
 import sys
 import time
 from vesna.spectrumsensor import SpectrumSensor, SweepConfig
-from vesna.rftest import DeviceUnderTest, SignalGenerator
+from vesna.rftest import DeviceUnderTest, SignalGenerator, parse_test_kwargs
 
 log_f = None
 
@@ -159,7 +159,7 @@ def test_power_ramp(dut, gen):
 
 	log("End power ramp test")
 
-def test_freq_sweep(dut, gen):
+def test_freq_sweep(dut, gen, p_dbm_list=None):
 	"""Check measurement errors versus tuned frequency
 	"""
 
@@ -167,7 +167,9 @@ def test_freq_sweep(dut, gen):
 
 	N = 100
 
-	p_dbm_list = [ -90, -75, -60, -45 ]
+	if p_dbm_list is None:
+		p_dbm_list = [ -90, -75, -60, -45 ]
+
 	for p_dbm in p_dbm_list:
 
 		log("  Pin = %d dBm" % (p_dbm,))
@@ -380,7 +382,7 @@ def test_ch_filter(dut, gen):
 
 	log("End channel filter test")
 
-def test_ident(dut, gen):
+def test_ident(dut, gen, **kwargs):
 	"""Identify device under test and testing harness
 	"""
 
@@ -432,6 +434,8 @@ def run_tests(options):
 
 	dut = load_dut(options)
 
+	test_kwargs = parse_test_kwargs(options.test_kwargs)
+
 	gen = SignalGenerator(options.usbtmc_device)
 
 	run_all = not any(getattr(options, name) for name, testfunc in iter_tests())
@@ -440,7 +444,7 @@ def run_tests(options):
 
 	for name, testfunc in sorted(iter_tests(), key=lambda x:"ident" not in x[0]):
 		if run_all or getattr(options, name):
-			testfunc(dut, gen)
+			testfunc(dut, gen, **test_kwargs)
 
 	log("Session ended at %s" % (datetime.datetime.now()))
 
@@ -470,6 +474,9 @@ def main():
 	parser.add_option("-O", "--remote-option", dest="dut_opts", metavar="OPTIONS", default="",
 			help="Any additional options needed for the remote access object. Separate "
 			"multiple options with a comma. Use -O,--help with -R to list available options.")
+	parser.add_option("-T", "--test-option", dest="test_kwargs", metavar="OPTIONS", default="",
+			help="Any additional options to pass to specified tests. Separate "
+			"multiple options with a comma.")
 
 	group = optparse.OptionGroup(parser, "Tests", description="Choose only specific tests to run "
 			"(default is to run all tests)")

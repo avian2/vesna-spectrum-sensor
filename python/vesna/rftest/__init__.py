@@ -1,5 +1,19 @@
 import optparse
 import os
+import re
+
+def parse_test_kwargs(o):
+	test_kwargs = {}
+
+	if o is None:
+		return test_kwargs
+
+	g = re.split('(,?\w+=)', o)[1:]
+	for k, v in zip(g[::2], g[1::2]):
+		k = k.strip(',=')
+		test_kwargs[k] = eval(v)
+
+	return test_kwargs
 
 class usbtmc:
 	def __init__(self, device):
