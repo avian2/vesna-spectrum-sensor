@@ -39,7 +39,9 @@ class LocalDeviceUnderTest(DeviceUnderTest):
 		return self.spectrumsensor.get_fw_version()
 
 	def get_status(self):
-		return self.spectrumsensor.get_status(self.config)
+		resp = self.spectrumsensor.get_status(self.config)
+		resp += [ "", "Calibration: %s" % (self.spectrumsensor.calibration,) ]
+		return resp
 
 	def measure_ch_impl(self, ch, n):
 		sweep_config = SweepConfig(self.config, ch, ch+1, 1)
