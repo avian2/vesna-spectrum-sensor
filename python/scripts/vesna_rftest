@@ -440,6 +440,7 @@ def run_tests(options):
 
 	run_all = not any(getattr(options, name) for name, testfunc in iter_tests())
 
+	log("Command line: %s" % (' '.join(sys.argv),))
 	log("Session started at %s" % (datetime.datetime.now()))
 
 	for name, testfunc in sorted(iter_tests(), key=lambda x:"ident" not in x[0]):
