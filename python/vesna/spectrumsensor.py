@@ -168,7 +168,7 @@ class SampleConfig(SweepConfig):
 		nsamples -- Number of samples to record
 		"""
 
-		SweepConfig.__init__(config, ch, ch+1, 1, nsamples)
+		SweepConfig.__init__(self, config, ch, ch+1, 1, nsamples)
 
 class TimestampedData:
 	"""Measurement data from a single frequency sweep.
