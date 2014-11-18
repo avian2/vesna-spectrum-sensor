@@ -96,34 +96,51 @@ class DeviceUnderTest:
 	def get_status(self):
 		return [""]
 
-	def measure_ch(self, ch, n, name):
+	def measure_ch_t(self, ch, n, name):
 		if self._replay:
 			return self._measure_ch_replay(name)
 		else:
 			return self._measure_ch_real(ch, n, name)
 
+	def measure_ch(self, ch, n, name):
+		return self.measure_ch_t(ch, n, name)[1]
+
 	def _measure_ch_real(self, ch, n, name):
 		assert ch < self.config.num
 
-		measurements = self.measure_ch_impl(ch, n + self._extra)
+		r = self.measure_ch_impl(ch, n + self._extra)
+		if len(r) == 2:
+			timestamps, measurements = r
+		else:
+			measurements = r
+			timestamps = range(len(measurements))
+
 		measurements = measurements[self._extra:]
 
-		self._measure_ch_save(name, measurements)
+		self._measure_ch_save(name, timestamps, measurements)
 		return measurements
 
 	def measure_ch_impl(self, ch, n):
-		return [0.0] * n
+		return range(n), [0.0] * n
 
-	def _measure_ch_save(self, name, measurements):
+	def _measure_ch_save(self, name, timestamps, measurements):
 		if self.log_path:
 			path = ("%s/%s_%s.log" % (self.log_path, self.name, name)).replace("-", "m")
 			f = open(path, "w")
-			f.write("# P [dBm]\n")
-			f.write("\n".join(map(str, measurements)))
+			f.write("# t[s]\tP [dBm]\n")
+			for t, m in zip(timestamps, measurements):
+				f.write("%f\t%f\n" % (t, m))
 			f.close()
 
 	def _measure_ch_replay(self, name):
 		path = ("%s/%s_%s.log" % (self.log_path, self.name, name)).replace("-", "m")
 		f = open(path)
 
-		return map(float, filter(lambda x:not x.startswith("#"), f))
+		timestamps = []
+		measurements = []
+		for line in filter(lambda x:not x.startswith("#"), f):
+			t, m = map(float, line.split())
+			timestamps.append(t)
+			measurements.append(m)
+
+		return timestamps, measurements
