@@ -2,7 +2,6 @@
 *.d
 *.elf
 *.o
-*.pyc
 *.srec
 tags
 python/build

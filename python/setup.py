@@ -1,29 +1,6 @@
 #!/usr/bin/python
 
-from distutils.core import Command, setup
-import unittest
-
-UNITTESTS = [
-		"tests.tests",
-	]
-
-class TestCommand(Command):
-	user_options = [ ]
-
-	def initialize_options(self):
-		pass
-
-	def finalize_options(self):
-		pass
-
-	def run(self):
-		suite = unittest.TestSuite()
-
-		suite.addTests(
-			unittest.defaultTestLoader.loadTestsFromNames(
-								UNITTESTS ) )
-
-		result = unittest.TextTestRunner(verbosity=2).run(suite)
+from setuptools import setup
 
 setup(name='vesna-spectrumsensor',
       version='0.1',
@@ -36,12 +13,12 @@ setup(name='vesna-spectrumsensor',
       packages = [ 'vesna', 'vesna.rftest' ],
       provides = [ 'vesna', 'vesna.rftest' ],
 
+      namespace_packages = [ 'vesna' ],
+
       scripts = [
 	      'scripts/vesna_rftest',
 	      'scripts/vesna_rftest_plot',
 	      'scripts/vesna_log',
       ],
-
-      cmdclass = { 'test': TestCommand }
-
+      test_suite = 'tests',
 )
