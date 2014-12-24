@@ -379,6 +379,9 @@ class SpectrumSensor:
 				line = self.comm.readline()
 			except select.error:
 				break
+			except serial.SerialException:
+				# this happens when socket is used and ctrl-c is pressed.
+				break
 
 			if not line:
 				break
