@@ -258,7 +258,7 @@ class SpectrumSensor:
 	"""Top-level abstraction of the attached spectrum sensing hardware."""
 
 	COMMAND_TIMEOUT = 0.5
-	DATA_TIMEOUT = 900
+	DATA_TIMEOUT = 300
 
 	def __init__(self, device, calibration=True):
 		"""Create a new spectrum sensor object.
