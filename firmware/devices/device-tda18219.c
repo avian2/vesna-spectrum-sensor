@@ -54,6 +54,11 @@ enum state_t {
 	BASEBAND_SAMPLE,
 };
 
+#define CHANNEL_BASE_HZ		40000000
+#define CHANNEL_SPACING_HZ	1000
+#define CHANNEL_NUM		860000
+#define CHANNEL_TIME_MS		50
+
 static enum state_t current_state = OFF;
 static struct vss_task* current_task = NULL;
 static int current_freq = -1;
@@ -579,13 +584,12 @@ static const struct vss_device_config dev_tda18219_dvbt_1700khz = {
 
 	.device			= &dev_tda18219,
 
-	// UHF: 470 MHz to 862 MHz
-	.channel_base_hz 	= 470000000,
-	.channel_spacing_hz	= 1000,
+	.channel_base_hz	= CHANNEL_BASE_HZ,
+	.channel_spacing_hz	= CHANNEL_SPACING_HZ,
 	.channel_bw_hz		= 1700000,
-	.channel_num		= 392000,
+	.channel_num		= CHANNEL_NUM,
 
-	.channel_time_ms	= 50,
+	.channel_time_ms	= CHANNEL_TIME_MS,
 
 	.priv			= &dev_tda18219_dvbt_1700khz_priv
 };
@@ -648,12 +652,12 @@ static const struct vss_device_config dev_tda18219_dvbt_8000khz = {
 	.device			= &dev_tda18219,
 
 	// UHF: 470 MHz to 862 MHz
-	.channel_base_hz 	= 470000000,
-	.channel_spacing_hz	= 1000,
+	.channel_base_hz 	= CHANNEL_BASE_HZ,
+	.channel_spacing_hz	= CHANNEL_SPACING_HZ,
 	.channel_bw_hz		= 8000000,
-	.channel_num		= 392000,
+	.channel_num		= CHANNEL_NUM,
 
-	.channel_time_ms	= 50,
+	.channel_time_ms	= CHANNEL_TIME_MS,
 
 	.priv			= &dev_tda18219_dvbt_8000khz_priv
 };
@@ -671,12 +675,12 @@ static const struct vss_device_config dev_tda18219_dvbt_1000khz = {
 	.device			= &dev_tda18219,
 
 	// UHF: 470 MHz to 862 MHz
-	.channel_base_hz	= 470000000,
-	.channel_spacing_hz	= 1000,
+	.channel_base_hz	= CHANNEL_BASE_HZ,
+	.channel_spacing_hz	= CHANNEL_SPACING_HZ,
 	.channel_bw_hz		= 1000000,
-	.channel_num		= 392000,
+	.channel_num		= CHANNEL_NUM,
 
-	.channel_time_ms	= 50,
+	.channel_time_ms	= CHANNEL_TIME_MS,
 
 	.priv			= &dev_tda18219_dvbt_1000khz_priv
 };
@@ -694,12 +698,12 @@ static const struct vss_device_config dev_tda18219_dvbt_500khz = {
 	.device			= &dev_tda18219,
 
 	// UHF: 470 MHz to 862 MHz
-	.channel_base_hz	= 470000000,
-	.channel_spacing_hz	= 1000,
+	.channel_base_hz	= CHANNEL_BASE_HZ,
+	.channel_spacing_hz	= CHANNEL_SPACING_HZ,
 	.channel_bw_hz		= 500000,
-	.channel_num		= 392000,
+	.channel_num		= CHANNEL_NUM,
 
-	.channel_time_ms	= 50,
+	.channel_time_ms	= CHANNEL_TIME_MS,
 
 	.priv			= &dev_tda18219_dvbt_500khz_priv
 };
