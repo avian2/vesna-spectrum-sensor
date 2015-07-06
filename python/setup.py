@@ -11,7 +11,8 @@ setup(name='vesna-spectrumsensor',
       author_email='tomaz.solc@tablix.org',
 
       packages = [ 'vesna', 'vesna.rftest' ],
-      provides = [ 'vesna', 'vesna.rftest' ],
+
+      install_requires = [ 'pyserial' ],
 
       namespace_packages = [ 'vesna' ],
 
