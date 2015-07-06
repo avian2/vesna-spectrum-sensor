@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='vesna-spectrumsensor',
-      version='0.1',
+      version='1.0.0',
       description='Tools for talking the VESNA almost-like-HTTP protocol',
       license='GPL',
       long_description=open("README").read(),
