@@ -13,6 +13,7 @@ setup(name='vesna-spectrumsensor',
       long_description=get_long_description(),
       author='Tomaz Solc',
       author_email='tomaz.solc@tablix.org',
+      url='https://github.com/avian2/vesna-spectrum-sensor',
 
       packages = [ 'vesna', 'vesna.rftest' ],
 
