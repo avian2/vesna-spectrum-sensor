@@ -8,7 +8,7 @@ def get_long_description():
 
 setup(name='vesna-spectrumsensor',
       version='1.0.1',
-      description='Tools for talking the VESNA almost-like-HTTP protocol',
+      description='Tools for talking to the VESNA spectrum sensor applicaiton',
       license='GPL',
       long_description=get_long_description(),
       author='Tomaz Solc',
