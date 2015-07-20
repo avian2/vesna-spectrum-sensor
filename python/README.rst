@@ -1,3 +1,5 @@
+.. vim:sw=3 ts=3 expandtab tw=78
+
 Introduction
 ============
 
@@ -9,37 +11,37 @@ Python interface.
 Installation
 ============
 
-To install system-wide, run:
+To install system-wide, run::
 
-$ python setup.py install
+   $ python setup.py install
 
-To run provided unit tests, run:
+To run provided unit tests, run::
 
-$ python setup.py test
+   $ python setup.py test
 
 
 Usage
 =====
 
-The minimal application using this module looks like the following:
+The minimal application using this module looks like the following::
 
-	# instantiate the SpectrumSensor class using the path
-	# to the serial device.
-	spectrumsensor = SpectrumSensor("/dev/ttyUSB0")
+   # instantiate the SpectrumSensor class using the path
+   # to the serial device.
+   spectrumsensor = SpectrumSensor("/dev/ttyUSB0")
 
-	# query the attached hardware for supported configurations.
-	config_list = spectrumsensor.get_config_list()
+   # query the attached hardware for supported configurations.
+   config_list = spectrumsensor.get_config_list()
 
-	# get required frequency sweep configuration.
-	sweep_config = config_list.get_sweep_config(...)
+   # get required frequency sweep configuration.
+   sweep_config = config_list.get_sweep_config(...)
 
-	# define callback function that does something with
-	# measurements.
-	def callback(sweep_config, sweep):
-		...
+   # define callback function that does something with
+   # measurements.
+   def callback(sweep_config, sweep):
+      ...
 
-	# start spectrum sensing
-	spectrumsensor.run(sweep_config, callback)
+   # start spectrum sensing
+   spectrumsensor.run(sweep_config, callback)
 
 Please refer to docstring documentation for details.
 
