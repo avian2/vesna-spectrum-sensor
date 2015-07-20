@@ -26,5 +26,5 @@ setup(name='vesna-spectrumsensor',
 	      'scripts/vesna_rftest_plot',
 	      'scripts/vesna_log',
       ],
-      test_suite = 'tests',
+      test_suite = 'test',
 )
