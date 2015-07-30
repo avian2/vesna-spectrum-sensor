@@ -15,7 +15,7 @@ setup(name='vesna-spectrumsensor',
       author_email='tomaz.solc@ijs.si',
       url='https://github.com/avian2/vesna-spectrum-sensor',
 
-      packages = [ 'vesna', 'vesna.rftest' ],
+      packages = [ 'vesna', 'vesna.rftest', 'vesna.spectrumsensor' ],
 
       install_requires = [ 'pyserial' ],
 
