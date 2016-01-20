@@ -66,8 +66,8 @@ class DeviceConfig:
 	def covers(self, start_hz, stop_hz):
 		"""Return true if this configuration can cover the given frequency band.
 
-		start_hz -- Lower bound of the frequency band to check (inclusive)
-		stop_hz -- Upper bound of the frequency band to check (inclusive)
+		:param start_hz: lower bound of the frequency band to check (inclusive)
+		:param stop_hz: upper bound of the frequency band to check (inclusive)
 		"""
 		return start_hz >= self.get_start_hz() and stop_hz <= self.get_stop_hz()
 
@@ -75,7 +75,7 @@ class DeviceConfig:
 		"""Return a sweep configuration that covers the entire frequency range supported
 		by this device configuration.
 
-		step_hz -- Frequency step to use. By default, step by a single channel.
+		:param step_hz: frequency step to use (by default, step by a single channel)
 		"""
 
 		if step_hz is None:
@@ -88,9 +88,9 @@ class DeviceConfig:
 	def get_sweep_config(self, start_hz, stop_hz, step_hz):
 		"""Return a sweep configuration that covers the specified frequency band.
 
-		start_hz -- Lower bound of the frequency band to sweep (inclusive)
-		stop_hz -- Upper bound of the frequency band to sweep (inclusive)
-		step_hz -- Sweep frequency step
+		:param start_hz: lower bound of the frequency band to sweep (inclusive)
+		:param stop_hz: upper bound of the frequency band to sweep (inclusive)
+		:param step_hz: sweep frequency step
 		"""
 		assert self.covers(start_hz, stop_hz)
 
@@ -112,17 +112,15 @@ class DeviceConfig:
 				self.device.id, self.id, self.get_start_hz(), self.get_stop_hz())
 
 class SweepConfig:
-	"""Frequency sweep configuration for a spectrum sensing device."""
-	def __init__(self, config, start_ch, stop_ch, step_ch, nsamples=100):
-		"""Create a new sweep configuration.
+	"""Frequency sweep configuration for a spectrum sensing device.
 
-		config -- Device configuration object to use
-		start_ch -- Lowest frequency channel to sweep
-		stop_ch -- One past the highest frequency channel to sweep
-		step_ch -- How many channels in a step
-		nsamples -- How many samples to average per measurement (only
-		supported on some devices)
-		"""
+	:param config: device configuration object to use
+	:param start_ch: lowest frequency channel to sweep
+	:param stop_ch: one past the highest frequency channel to sweep
+	:param step_ch: how many channels in a step
+	:param nsamples: how many samples to average per measurement (only supported on some devices)
+	"""
+	def __init__(self, config, start_ch, stop_ch, step_ch, nsamples=100):
 		assert start_ch >= 0
 		assert start_ch < config.num
 		assert stop_ch >= 0
@@ -159,15 +157,14 @@ class SweepConfig:
 		return map(self.config.ch_to_hz, self.get_ch_list())
 
 class SampleConfig(SweepConfig):
-	"""Frequency sweep configuration for a spectrum sensing device."""
+	"""Frequency sweep configuration for a spectrum sensing device.
+
+	:param config: device configuration object to use
+	:param ch: frequency channel to sample
+	:param nsamples: number of samples to record
+	"""
+
 	def __init__(self, config, ch, nsamples):
-		"""Create a new sweep configuration.
-
-		config -- Device configuration object to use
-		ch -- Frequency channel to sample,
-		nsamples -- Number of samples to record
-		"""
-
 		SweepConfig.__init__(self, config, ch, ch+1, 1, nsamples)
 
 class TimestampedData:
@@ -202,8 +199,8 @@ class ConfigList:
 	def get_config(self, device_id, config_id):
 		"""Return the specified device configuration.
 
-		device_id -- numeric device id, as returned by the "list" command.
-		config_id -- numeric configuration id, as returned by the "list" command.
+		:param device_id: numeric device id, as returned by the `list` command
+		:param config_id: numeric configuration id, as returned by the `list` command
 		"""
 		for config in self.configs:
 			if config.id == config_id and config.device.id == device_id:
@@ -214,10 +211,10 @@ class ConfigList:
 	def get_sweep_config(self, start_hz, stop_hz, step_hz, name=None):
 		"""Return best frequency sweep configuration for specified requirements.
 
-		start_hz -- Lower bound of the frequency band to sweep (inclusive).
-		stop_hz -- Upper bound of the frequency band to sweep (inclusive).
-		step_hz -- Preferred frequency step to use.
-		name -- Optional required sub-string in device configuration name.
+		:param start_hz: lower bound of the frequency band to sweep (inclusive)
+		:param stop_hz: upper bound of the frequency band to sweep (inclusive)
+		:param step_hz: preferred frequency step to use
+		:param name: optional required sub-string in device configuration name
 		"""
 
 		candidates = []
