@@ -17,7 +17,7 @@ OBJS		+= average.o main.o device.o buffer.o task.o calibration.o platform/timer.
 LIBS		+= -lopencm3_stm32f1
 
 OPENOCD		?= openocd
-OPENOCD_PARAMS  ?= -f interface/olimex-arm-usb-ocd.cfg -f target/stm32f1x.cfg
+OPENOCD_PARAMS  ?= -f interface/ftdi/olimex-arm-usb-ocd.cfg -f target/stm32f1x.cfg
 
 include Makefile.conf
 
