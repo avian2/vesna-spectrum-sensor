@@ -181,12 +181,30 @@ void test_covariance_power_max(void)
 
 	vss_covariance(samples, size, cov, l);
 
+	// (4095 - 2047.5)^2 * 8 = 33538050
+
 	int l0;
 	for(l0 = 0; l0 < l; l0++) {
 		if(l0 % 2 == 0) {
-			TEST_ASSERT_EQUAL(4192256, cov[l0]);
+			TEST_ASSERT_EQUAL(33538050, cov[l0]);
 		} else {
-			TEST_ASSERT_EQUAL(-4192256, cov[l0]);
+			TEST_ASSERT_EQUAL(-33538050, cov[l0]);
 		}
 	}
+}
+
+void test_covariance_acc_max(void)
+{
+	int size = 25000;
+	uint16_t samples[size];
+	int l = 20;
+	int cov[l];
+
+	int n;
+	samples[0] = 4095;
+	for(n = 1; n < size; n++) samples[n] = 0;
+
+	vss_covariance(samples, size, cov, l);
+
+	TEST_ASSERT_EQUAL(5365, cov[0]);
 }

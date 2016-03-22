@@ -58,20 +58,26 @@ power_t vss_signal_power(const uint16_t* buffer, size_t len)
 int vss_covariance(const uint16_t* buffer, size_t len, int* cov, size_t l)
 {
 	unsigned l0, n;
+	static const int k = 8;
 
+	/* max *bufer is 0x0fff */
+	/* max len is 0x8008 (32776) */
+
+	/* max mean is 0x7ffffff */
 	int mean = 0;
 	for(n = 0; n < len; n++) {
-		mean += buffer[n];
+		mean += buffer[n]*k;
 	}
 
+	/* max mean is 0xfff0 */
 	mean /= len;
 
 	for(l0 = 0; l0 < l; l0++) {
 		long long acc = 0;
 		for(n = 0; n < len-l0; n++) {
-			acc += ((int) buffer[n] - mean) * ((int) buffer[n+l0] - mean);
+			acc += ((int) buffer[n]*k - mean) * ((int) buffer[n+l0]*k - mean);
 		}
-		cov[l0] = acc/((int) len-l0);
+		cov[l0] = acc/k/((int) len-l0);
 	}
 
 	return VSS_OK;
