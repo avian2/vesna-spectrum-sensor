@@ -1,6 +1,8 @@
+import base64
 import re
 import select
 import serial
+import struct
 
 class SpectrumSensorException(Exception): pass
 
@@ -370,6 +372,59 @@ class SpectrumSensor:
 				sweep_config.nsamples))
 		self._wait_for_ok()
 
+	@classmethod
+	def _unser_old(self, fields):
+		if fields[-1] != 'DE':
+			raise ValueError
+
+		sweep = TimestampedData()
+
+		sweep.timestamp = float(fields[1])
+		sweep.channel = int(fields[3])
+		sweep.data = map(float, fields[5:-1])
+
+		return sweep
+
+	@classmethod
+	def _unser_dec(self, fields):
+		if len(fields) < 9:
+			raise ValueError
+		if fields[-1] != 'DE':
+			raise ValueError
+
+		scale = float(fields[5])
+
+		sweep = TimestampedData()
+		sweep.timestamp = float(fields[1])
+		sweep.channel = int(fields[3])
+		sweep.data = map(lambda x:float(x)/scale, fields[7:-1])
+
+		return sweep
+
+	@classmethod
+	def _unser_base64(self, fields):
+		if len(fields) != 9:
+			raise ValueError
+		if fields[8] != 'BE':
+			raise ValueError
+
+		scale = float(fields[5])
+
+		sweep = TimestampedData()
+		sweep.timestamp = float(fields[1])
+		sweep.channel = int(fields[3])
+
+		b64 = fields[7]
+
+		sweep.data = [
+			struct.unpack('>H',
+				base64.b64decode('AA' + b64[n:n+2])[1:]
+			)[0]/scale
+			for n in range(0, len(b64), 2)
+		]
+
+		return sweep
+
 	def _iter_timestamps(self, num):
 		while True:
 			try:
@@ -385,22 +440,27 @@ class SpectrumSensor:
 
 			try:
 				fields = line.split()
-				if len(fields) != num + 6:
+				if len(fields) < 7:
 					raise ValueError
 				if fields[0] != 'TS':
 					raise ValueError
 				if fields[2] != 'CH':
 					raise ValueError
-				if fields[4] != 'DS':
-					raise ValueError
-				if fields[-1] != 'DE':
+				if fields[4] == 'DS':
+					sweep = self._unser_old(fields)
+				elif fields[4] == 'SC':
+					if fields[6] == 'DS':
+						sweep = self._unser_dec(fields)
+					elif fields[6] == 'BS':
+						sweep = self._unser_base64(fields)
+					else:
+						raise ValueError
+				else:
 					raise ValueError
 
-				sweep = TimestampedData()
+				if len(sweep.data) != num:
+					raise ValueError
 
-				sweep.timestamp = float(fields[1])
-				sweep.channel = int(fields[3])
-				sweep.data = map(float, fields[5:-1])
 			except ValueError:
 				print "Ignoring corrupted line: %s" % (line,)
 			else:

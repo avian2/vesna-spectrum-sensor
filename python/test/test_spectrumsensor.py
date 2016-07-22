@@ -122,6 +122,34 @@ class TestConfigList(unittest.TestCase):
 			    time: 1 ms'''
 		), str(self.cl))
 
+from vesna.spectrumsensor import SpectrumSensor
+
+class TestSpectrumSensor(unittest.TestCase):
+
+	def test_unser_base64(self):
+		f = "TS 16.296 CH 660000 SC 1 BS gBgBgCgBgA BE".split()
+		td = SpectrumSensor._unser_base64(f)
+
+		self.assertEquals(td.timestamp, 16.296)
+		self.assertEquals(td.channel, 660000)
+		self.assertEquals(td.data, [2049.0, 2049.0, 2050.0, 2049.0, 2048.0])
+
+	def test_unser_dec(self):
+		f = "TS 0.049 CH 660000 SC 100 DS -9782 -9805 -9759 -10016 -9660 DE".split()
+		td = SpectrumSensor._unser_dec(f)
+
+		self.assertEquals(td.timestamp, 0.049)
+		self.assertEquals(td.channel, 660000)
+		self.assertEquals(td.data, [-97.82, -98.05, -97.59, -100.16, -96.60])
+
+	def test_unser_old(self):
+		f = "TS 0.049 CH 660000 DS -97.82 -98.05 -97.59 -100.16 -96.60 DE".split()
+		td = SpectrumSensor._unser_old(f)
+
+		self.assertEquals(td.timestamp, 0.049)
+		self.assertEquals(td.channel, 660000)
+		self.assertEquals(td.data, [-97.82, -98.05, -97.59, -100.16, -96.60])
+
 from vesna.rftest import parse_test_kwargs
 
 class TestRFTest(unittest.TestCase):
