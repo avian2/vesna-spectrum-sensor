@@ -59,7 +59,7 @@ static struct vss_sweep_config current_sweep_config = {
 };
 
 static struct vss_task current_task;
-static power_t data_buffer[DATA_BUFFER_SIZE];
+static data_t data_buffer[DATA_BUFFER_SIZE];
 static int has_started = 0;
 
 extern void (*const vector_table[]) (void);
@@ -515,7 +515,7 @@ int main(void)
 
 			unsigned int channel = ctx.block->channel;
 			uint32_t timestamp = ctx.block->timestamp;
-			power_t power;
+			data_t power;
 
 			printf("TS %ld.%03ld CH %u DS", timestamp/1000,
 					timestamp%1000, channel);

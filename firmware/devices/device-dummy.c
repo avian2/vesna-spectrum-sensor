@@ -29,7 +29,7 @@
 
 static struct vss_task* current_task = NULL;
 
-typedef int (*data_f)(power_t *val);
+typedef int (*data_f)(data_t *val);
 
 struct dev_dummy_config_priv {
 	data_f get_rssi;
@@ -62,7 +62,7 @@ static int dev_dummy_status(void* priv __attribute__((unused)), char* buffer, si
 
 static void do_sweep(void)
 {
-	power_t result;
+	data_t result;
 
 	const struct dev_dummy_config_priv* priv = current_task->sweep_config->device_config->priv;
 
@@ -83,7 +83,7 @@ static void do_sweep(void)
 
 static void do_sample(void)
 {
-	power_t* data;
+	data_t* data;
 
 	const struct dev_dummy_config_priv* priv = current_task->sweep_config->device_config->priv;
 
@@ -161,7 +161,7 @@ static const struct vss_device device_dummy = {
 	.priv 			= NULL
 };
 
-static int get_zero(power_t* val)
+static int get_zero(data_t* val)
 {
 	*val = 0;
 	return VSS_OK;
@@ -187,13 +187,13 @@ static const struct vss_device_config dev_dummy_null_config = {
 	.priv			= &dev_dummy_null_config_priv
 };
 
-static int get_random_dbm(power_t* val)
+static int get_random_dbm(data_t* val)
 {
 	*val = -(rand() % 10000);
 	return VSS_OK;
 }
 
-static int get_random_baseband(power_t* val)
+static int get_random_baseband(data_t* val)
 {
 	*val = rand() % 4096;
 	return VSS_OK;
@@ -219,7 +219,7 @@ static const struct vss_device_config dev_dummy_random_config = {
 	.priv			= &dev_dummy_random_config_priv
 };
 
-static int get_error(power_t* val __attribute__((unused)))
+static int get_error(data_t* val __attribute__((unused)))
 {
 	return VSS_ERROR;
 }

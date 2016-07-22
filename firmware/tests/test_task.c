@@ -23,7 +23,7 @@
 #define buffer_data_len 1024
 
 static struct vss_task run;
-static power_t buffer_data[buffer_data_len];
+static data_t buffer_data[buffer_data_len];
 
 int run_f(void* priv, struct vss_task* run)
 {
@@ -88,7 +88,7 @@ void test_start(void)
 
 void test_single_run_sweep(void)
 {
-	const power_t v = 0x70fe;
+	const data_t v = 0x70fe;
 
 	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, 2, buffer_data);
 	vss_task_start(&run);
@@ -113,7 +113,7 @@ void test_single_run_sweep(void)
 
 void test_single_run_sweep_one_channel(void)
 {
-	const power_t v = 0x70fe;
+	const data_t v = 0x70fe;
 
 	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config_one, 2, buffer_data);
 	vss_task_start(&run);
@@ -147,7 +147,7 @@ void test_single_run_block(void)
 		int ch = vss_task_get_channel(&run);
 		TEST_ASSERT_EQUAL(cnt%10, ch);
 
-		power_t *wptr;
+		data_t *wptr;
 		int r = vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
 		TEST_ASSERT_EQUAL(VSS_OK, r);
 
@@ -170,7 +170,7 @@ void test_single_run_block(void)
 
 void test_infinite_run(void)
 {
-	const power_t v = 0x70fe;
+	const data_t v = 0x70fe;
 
 	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, -1, buffer_data);
 	vss_task_start(&run);
@@ -200,7 +200,7 @@ void test_infinite_run_block(void)
 
 	int cnt, r;
 	for(cnt = 0; cnt < 50; cnt++) {
-		power_t *wptr;
+		data_t *wptr;
 		r = vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
 		TEST_ASSERT_EQUAL(VSS_OK, r);
 		r = vss_task_write_sample(&run);
@@ -210,7 +210,7 @@ void test_infinite_run_block(void)
 	vss_task_stop(&run);
 
 	for(cnt = 0; cnt < 50; cnt++) {
-		power_t *wptr;
+		data_t *wptr;
 		r = vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
 		TEST_ASSERT_EQUAL(VSS_OK, r);
 		r = vss_task_write_sample(&run);
@@ -224,7 +224,7 @@ void test_infinite_run_block(void)
 
 void test_read(void)
 {
-	const power_t v = 0x70fe;
+	const data_t v = 0x70fe;
 
 	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, -1, buffer_data);
 	vss_task_start(&run);
@@ -244,7 +244,7 @@ void test_read(void)
 
 	unsigned int channel;
 	uint32_t timestamp;
-	power_t power;
+	data_t power;
 
 	cnt = 0;
 	while(vss_task_read_parse(&ctx, &timestamp, &channel, &power) == VSS_OK) {
@@ -264,7 +264,7 @@ void test_read_sample(void)
 
 	int cnt;
 	for(cnt = 0; cnt < 2; cnt++) {
-		power_t *wptr;
+		data_t *wptr;
 		vss_task_reserve_sample(&run, &wptr, 0xdeadbeef);
 		memset(wptr, 0x01, sweep_config.n_average*sizeof(*wptr));
 		vss_task_write_sample(&run);
@@ -279,12 +279,12 @@ void test_read_sample(void)
 
 	unsigned int channel;
 	uint32_t timestamp;
-	power_t power;
+	data_t power;
 
 	cnt = 0;
 	while(vss_task_read_parse(&ctx, &timestamp, &channel, &power) == VSS_OK) {
 		TEST_ASSERT_EQUAL(0xdeadbeef, timestamp);
-		if(sizeof(power_t) == 2) {
+		if(sizeof(data_t) == 2) {
 			TEST_ASSERT_EQUAL(0x0101, power);
 		} else {
 			TEST_ASSERT_EQUAL(0x01010101, power);
@@ -350,7 +350,7 @@ void test_get_error(void)
 
 void test_overflow(void)
 {
-	const power_t v = 0x70fe;
+	const data_t v = 0x70fe;
 
 	vss_task_init(&run, VSS_TASK_SWEEP, &sweep_config, -1, buffer_data);
 	vss_task_start(&run);
@@ -368,7 +368,7 @@ void test_overflow(void)
 
 	unsigned int channel;
 	uint32_t timestamp;
-	power_t power;
+	data_t power;
 
 	while(!vss_task_read_parse(&ctx, &timestamp, &channel, &power));
 

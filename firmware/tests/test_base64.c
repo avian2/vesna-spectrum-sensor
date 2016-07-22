@@ -29,7 +29,7 @@ void tearDown(void)
 
 void test_one(void)
 {
-	power_t x = 1;
+	data_t x = 1;
 
 	const char* r;
 
@@ -45,7 +45,7 @@ void test_one(void)
 
 void test_max(void)
 {
-	power_t x = 0x0fff;
+	data_t x = 0x0fff;
 
 	const char* r;
 

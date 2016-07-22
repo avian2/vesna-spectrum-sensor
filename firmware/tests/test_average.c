@@ -29,14 +29,14 @@ void tearDown(void)
 void test_average_zeros(void)
 {
 	int size = 100;
-	power_t buffer[size];
+	data_t buffer[size];
 	int n;
 
 	for(n = 0; n < size; n++) {
 		buffer[n] = 0;
 	}
 
-	power_t avg = vss_average(buffer, size);
+	data_t avg = vss_average(buffer, size);
 
 	TEST_ASSERT_EQUAL(0, avg);
 }
@@ -44,14 +44,14 @@ void test_average_zeros(void)
 void test_average_ramp(void)
 {
 	int size = 101;
-	power_t buffer[size];
+	data_t buffer[size];
 	int n;
 
 	for(n = 0; n < size; n++) {
 		buffer[n] = n;
 	}
 
-	power_t avg = vss_average(buffer, size);
+	data_t avg = vss_average(buffer, size);
 
 	TEST_ASSERT_EQUAL(50, avg);
 }
@@ -59,14 +59,14 @@ void test_average_ramp(void)
 void test_average_overflow(void)
 {
 	int size = 101;
-	power_t buffer[size];
+	data_t buffer[size];
 	int n;
 
 	for(n = 0; n < size; n++) {
 		buffer[n] = -9000;
 	}
 
-	power_t avg = vss_average(buffer, size);
+	data_t avg = vss_average(buffer, size);
 
 	TEST_ASSERT_EQUAL(-9000, avg);
 }
@@ -81,7 +81,7 @@ void test_signal_power_zeros(void)
 		buffer[n] = 0;
 	}
 
-	power_t power = vss_signal_power(buffer, size);
+	data_t power = vss_signal_power(buffer, size);
 
 	TEST_ASSERT_EQUAL(INT16_MIN, power);
 }
@@ -96,7 +96,7 @@ void test_signal_power_constant(void)
 		buffer[n] = 10;
 	}
 
-	power_t power = vss_signal_power(buffer, size);
+	data_t power = vss_signal_power(buffer, size);
 
 	TEST_ASSERT_EQUAL(INT16_MIN, power);
 }
@@ -111,7 +111,7 @@ void test_signal_power_min(void)
 		buffer[n] = n%2;
 	}
 
-	power_t power = vss_signal_power(buffer, size);
+	data_t power = vss_signal_power(buffer, size);
 
 	TEST_ASSERT_EQUAL(-9633, power);
 }
@@ -127,7 +127,7 @@ void test_signal_power_max(void)
 		buffer[n] = (n%2) * UINT16_MAX;
 	}
 
-	power_t power = vss_signal_power(buffer, size);
+	data_t power = vss_signal_power(buffer, size);
 
 	TEST_ASSERT_EQUAL(0, power);
 }

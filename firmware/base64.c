@@ -35,7 +35,7 @@ static char buffer[BUFFER_SIZE];
  * @param x Value to encode.
  * @param n Number of Base64 characters to use.
  * @return Pointer to an internal buffer with encoded string (read-only). */
-const char* vss_base64_enc(power_t x, int n)
+const char* vss_base64_enc(data_t x, int n)
 {
 	assert(n < BUFFER_SIZE);
 

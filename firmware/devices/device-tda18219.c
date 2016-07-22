@@ -127,7 +127,7 @@ static int get_input_power_det(int* rssi_dbm_100, unsigned int n_average)
 		 *
 		 * Note we are returning [dBm * 100]
 		 */
-		power_t buffer[n_average];
+		data_t buffer[n_average];
 		unsigned int n;
 		for(n = 0; n < n_average; n++) {
 			buffer[n] = samples[n] * 3300 / 1024 - 15000;
@@ -342,7 +342,7 @@ static enum state_t dev_tda18219_state_read_measurement(struct vss_task* task)
 }
 
 #ifdef FUNC_COVARIANCE
-static int dev_tda18219_baseband_sample_covariance(power_t* data, struct vss_task* task)
+static int dev_tda18219_baseband_sample_covariance(data_t* data, struct vss_task* task)
 {
 	int r = vss_adc_get_input_samples(sample_buffer, NSAMPLES);
 
@@ -352,7 +352,7 @@ static int dev_tda18219_baseband_sample_covariance(power_t* data, struct vss_tas
 	return r;
 }
 #else
-static int dev_tda18219_baseband_sample_null(power_t* data, struct vss_task* task)
+static int dev_tda18219_baseband_sample_null(data_t* data, struct vss_task* task)
 {
 	assert(sizeof(*data) == sizeof(uint16_t));
 
@@ -371,7 +371,7 @@ static enum state_t dev_tda18219_state_baseband_sample(struct vss_task* task)
 	 * is still empty. */
 	task->state = VSS_DEVICE_RUN_SUSPENDED;
 
-	power_t* data;
+	data_t* data;
 	int r = vss_task_reserve_sample(task, &data, vss_rtc_read());
 	if(r == VSS_SUSPEND) {
 		return BASEBAND_SAMPLE;

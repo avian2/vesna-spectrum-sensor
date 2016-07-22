@@ -23,6 +23,6 @@
 
 #include "buffer.h"
 
-const char* vss_base64_enc(power_t x, int n);
+const char* vss_base64_enc(data_t x, int n);
 
 #endif

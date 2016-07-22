@@ -75,7 +75,7 @@ struct vss_task {
 	unsigned int write_channel;
 
 	/** @brief Pointer for writing to buffer. */
-	power_t* write_ptr;
+	data_t* write_ptr;
 
 	/** @brief Error message for the task. */
 	const char* volatile error_msg;
@@ -90,7 +90,7 @@ struct vss_task {
 struct vss_task_block {
 	uint32_t timestamp;
 	unsigned int channel;
-	power_t data[0];
+	data_t data[0];
 };
 
 /** @brief Result of a buffer read operation. */
@@ -100,7 +100,7 @@ struct vss_task_read_result {
 	const struct vss_task_block* block;
 
 	/** @brief Pointer for reading from buffer. */
-	const power_t* read_ptr;
+	const data_t* read_ptr;
 
 	/** @brief Current channel being read from the buffer. */
 	unsigned int read_channel;
@@ -113,7 +113,7 @@ struct vss_task_read_result {
  * Typical usage:
  *
  * @code{.c}
- * power_t data[512];
+ * data_t data[512];
  * struct vss_task device_run;
  *
  * vss_buffer_init(&device_run, &sweep_config, sweep_num, data);
@@ -133,7 +133,7 @@ struct vss_task_read_result {
 
 int vss_task_init_size(struct vss_task* task, enum vss_task_type type,
 		const struct vss_sweep_config* sweep_config,
-		int sweep_num, power_t *data, size_t data_len);
+		int sweep_num, data_t *data, size_t data_len);
 
 int vss_task_start(struct vss_task* task);
 int vss_task_stop(struct vss_task* task);
@@ -143,7 +143,7 @@ const char* vss_task_get_error(struct vss_task* task);
 
 int vss_task_read(struct vss_task* task, struct vss_task_read_result* ctx);
 int vss_task_read_parse(struct vss_task_read_result *ctx,
-		uint32_t* timestamp, unsigned int* channel, power_t* power);
+		uint32_t* timestamp, unsigned int* channel, data_t* power);
 
 /** @} */
 
@@ -154,9 +154,9 @@ int vss_task_read_parse(struct vss_task_read_result *ctx,
 unsigned int vss_task_get_channel(struct vss_task* task);
 unsigned int vss_task_get_n_average(struct vss_task* task);
 
-int vss_task_insert_sweep(struct vss_task* device_run, power_t data,
+int vss_task_insert_sweep(struct vss_task* device_run, data_t data,
 							uint32_t timestamp);
-int vss_task_reserve_sample(struct vss_task* task, power_t** data,
+int vss_task_reserve_sample(struct vss_task* task, data_t** data,
 							uint32_t timestamp);
 int vss_task_write_sample(struct vss_task* task);
 

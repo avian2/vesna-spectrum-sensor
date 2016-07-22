@@ -135,7 +135,7 @@ static void dev_cc_take_measurement(struct vss_task* task)
 
 	unsigned n;
 	unsigned n_average = vss_task_get_n_average(task);
-	power_t buffer[n_average];
+	data_t buffer[n_average];
 
 	for(n = 0; n < n_average; n++) {
 		r = vss_cc_read_reg(CC_REG_RSSI, (uint8_t*) &reg);
@@ -146,11 +146,11 @@ static void dev_cc_take_measurement(struct vss_task* task)
 			return;
 		}
 
-		power_t rssi_dbm_100 = -5920 + reg * 50;
+		data_t rssi_dbm_100 = -5920 + reg * 50;
 		buffer[n] = rssi_dbm_100;
 	}
 
-	power_t rssi_dbm_100 = vss_average(buffer, n_average);
+	data_t rssi_dbm_100 = vss_average(buffer, n_average);
 
 	if(vss_task_insert_sweep(task, rssi_dbm_100, vss_rtc_read()) == VSS_OK) {
 		r = dev_cc_prepare_measurement(task);

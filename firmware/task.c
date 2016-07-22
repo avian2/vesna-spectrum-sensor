@@ -28,7 +28,7 @@
  */
 int vss_task_init_size(struct vss_task* task, enum vss_task_type type,
 		const struct vss_sweep_config* sweep_config,
-		int sweep_num, power_t *data, size_t data_len)
+		int sweep_num, data_t *data, size_t data_len)
 {
 	task->type = type;
 
@@ -151,7 +151,7 @@ static int vss_task_inc_channel(struct vss_task* task)
  * @param timestamp Time of the measurement.
  * @return VSS_STOP if the driver should terminate the task or VSS_OK otherwise.
  */
-int vss_task_insert_sweep(struct vss_task* task, power_t data, uint32_t timestamp)
+int vss_task_insert_sweep(struct vss_task* task, data_t data, uint32_t timestamp)
 {
 	if(task->write_channel == task->sweep_config->channel_start) {
 		int r = vss_task_reserve_block(task, timestamp, task->write_channel);
@@ -182,7 +182,7 @@ int vss_task_insert_sweep(struct vss_task* task, power_t data, uint32_t timestam
  * @param timestamp Time of the measurement.
  * @return VSS_OK on success or error otherwise.
  */
-int vss_task_reserve_sample(struct vss_task* task, power_t** data, uint32_t timestamp)
+int vss_task_reserve_sample(struct vss_task* task, data_t** data, uint32_t timestamp)
 {
 	int r = vss_task_reserve_block(task, timestamp, task->write_channel);
 	if(r) {
@@ -328,7 +328,7 @@ int vss_task_read(struct vss_task* task, struct vss_task_read_result* ctx)
  * @return VSS_STOP if there is nothing more to parse or VSS_OK otherwise.
  */
 int vss_task_read_parse(struct vss_task_read_result *ctx,
-		uint32_t* timestamp, unsigned int* channel, power_t* power)
+		uint32_t* timestamp, unsigned int* channel, data_t* power)
 {
 	struct vss_task* const task = ctx->task;
 

@@ -20,7 +20,7 @@
 
 #include <math.h>
 
-power_t vss_average(const power_t* buffer, size_t len)
+data_t vss_average(const data_t* buffer, size_t len)
 {
 	int acc = 0;
 
@@ -32,7 +32,7 @@ power_t vss_average(const power_t* buffer, size_t len)
 	return acc / (int) len;
 }
 
-power_t vss_signal_power(const uint16_t* buffer, size_t len)
+data_t vss_signal_power(const uint16_t* buffer, size_t len)
 {
 	int acc = 0;
 	size_t n;
