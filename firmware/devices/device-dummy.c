@@ -155,6 +155,7 @@ static const struct vss_device device_dummy = {
 	.run			= dev_dummy_run,
 	.resume			= dev_dummy_resume,
 	.status			= dev_dummy_status,
+	.get_meta		= NULL,
 
 	.supports_task_baseband	= 1,
 

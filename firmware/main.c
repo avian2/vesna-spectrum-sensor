@@ -36,6 +36,7 @@
 #include "task.h"
 #include "rcc.h"
 #include "version.h"
+#include "base64.h"
 
 #define USART_BUFFER_SIZE		128
 
@@ -517,19 +518,26 @@ int main(void)
 			uint32_t timestamp = ctx.block->timestamp;
 			data_t power;
 
-			printf("TS %ld.%03ld CH %u DS", timestamp/1000,
-					timestamp%1000, channel);
+			printf("TS %ld.%03ld CH %u SC %d ", timestamp/1000,
+					timestamp%1000, channel,
+					current_task.meta.scale);
 
-			while(vss_task_read_parse(&ctx, &timestamp, &channel, &power) == VSS_OK) {
-
-				if(current_task.type == VSS_TASK_SWEEP) {
-					printf(" %d.%02d", power/100, abs(power%100));
-				} else {
+			if(current_task.meta.fmt == VSS_FMT_DECIMAL) {
+				printf("DS");
+				while(vss_task_read_parse(&ctx, &timestamp,
+						&channel, &power) == VSS_OK) {
 					printf(" %d", power);
 				}
+				printf(" DE\n");
+			} else {
+				printf("BS ");
+				while(vss_task_read_parse(&ctx, &timestamp,
+						&channel, &power) == VSS_OK) {
+					printf("%s", vss_base64_enc(power, 2));
+				}
+				printf(" BE\n");
 			}
 
-			printf(" DE\n");
 			debug("main: wrote block report\n");
 			n = 1;
 		}

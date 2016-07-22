@@ -510,6 +510,30 @@ static const struct calibration_point* dev_tda18219_get_calibration(
 	return cpriv->calibration;
 }
 
+static int dev_tda18219_get_meta(struct vss_data_meta* meta,
+		void* priv __attribute__((unused)),
+		const struct vss_task* task)
+{
+	if(task->type == VSS_TASK_SWEEP) {
+		meta->unit = VSS_UNIT_DBM;
+		meta->scale = 100;
+		meta->fmt = VSS_FMT_DECIMAL;
+	} else {
+#ifdef FUNC_COVARIANCE
+		meta->unit = VSS_UNIT_DIGIT_SQ;
+		meta->scale = VSS_AVERAGE_SCALE;
+		meta->fmt = VSS_FMT_DECIMAL;
+#else
+		meta->unit = VSS_UNIT_DIGIT;
+		meta->scale = 1;
+		meta->fmt = VSS_FMT_BASE64;
+#endif
+	}
+
+	return VSS_OK;
+}
+
+
 static const struct vss_device dev_tda18219 = {
 #ifdef FUNC_COVARIANCE
 	.name = "tda18219hn (covariance-func)",
@@ -521,6 +545,7 @@ static const struct vss_device dev_tda18219 = {
 	.run			= dev_tda18219_run,
 	.resume			= dev_tda18219_resume,
 	.get_calibration	= dev_tda18219_get_calibration,
+	.get_meta		= dev_tda18219_get_meta,
 
 	.supports_task_baseband	= 1,
 

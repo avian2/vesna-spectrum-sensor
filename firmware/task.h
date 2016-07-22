@@ -85,6 +85,9 @@ struct vss_task {
 	unsigned int sample_num;
 
 	unsigned int overflows;
+
+	/** @brief Meta-data for data stored in the buffer. */
+	struct vss_data_meta meta;
 };
 
 struct vss_task_block {

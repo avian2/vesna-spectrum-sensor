@@ -21,6 +21,22 @@
 int vss_device_config_list_num;
 const struct vss_device_config* vss_device_config_list[VSS_MAX_DEVICE_CONFIG];
 
+/** @brief Obtain metadata from spectrum sensing device.
+ *
+ * @param device Pointer to the device to query.
+ * @param meta Pointer to structure that will be filled in.
+ * @param task Pointer to task that will be started.
+ * @return VSS_OK on success or an error code otherwise. */
+int vss_device_get_meta(const struct vss_device* device,
+		struct vss_data_meta* meta, const struct vss_task* task)
+{
+	if(device->get_meta != NULL) {
+		return device->get_meta(meta, device->priv, task);
+	} else {
+		return VSS_NOT_SUPPORTED;
+	}
+}
+
 /** @brief Start a spectrum sensing device.
  *
  * @param device Pointer to the device to start.

@@ -43,6 +43,36 @@ typedef int data_t;
 typedef int16_t data_t;
 #endif
 
+enum vss_data_unit {
+	VSS_UNIT_DBM,
+	VSS_UNIT_DIGIT,
+	VSS_UNIT_DIGIT_SQ,
+};
+
+enum vss_data_fmt {
+	VSS_FMT_DECIMAL,
+	VSS_FMT_BASE64
+};
+
+/** @brief Context about how to interpret and serialize data_t values.
+ *
+ * This gets communicated down the line to the client on the serial line. */
+struct vss_data_meta {
+	/** @brief Fixed point scaling factor.
+	 *
+	 * y = x/scale
+	 *
+	 * where y is value after scaling and x is value stored in data_t type.
+	 */
+	int scale;
+
+	/** @brief How to serialize. */
+	enum vss_data_fmt fmt;
+
+	/** @brief Unit (after applying scaling factor). */
+	enum vss_data_unit unit;
+};
+
 /** @brief Circular buffer. */
 struct vss_buffer {
 	/** @brief Size of blocks */

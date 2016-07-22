@@ -70,6 +70,23 @@ int vss_task_init_size(struct vss_task* task, enum vss_task_type type,
 
 	task->overflows = 0;
 
+	const struct vss_device* device = task->sweep_config->device_config->device;
+	r = vss_device_get_meta(device, &task->meta, task);
+	if(r == VSS_NOT_SUPPORTED) {
+		/* default values before introduction of vss_data_meta */
+		if(task->type == VSS_TASK_SWEEP) {
+			task->meta.unit = VSS_UNIT_DBM;
+			task->meta.scale = 100;
+			task->meta.fmt = VSS_FMT_DECIMAL;
+		} else {
+			task->meta.unit = VSS_UNIT_DIGIT;
+			task->meta.scale = 1;
+			task->meta.fmt = VSS_FMT_BASE64;
+		}
+	} else {
+		return r;
+	}
+
 	return VSS_OK;
 }
 

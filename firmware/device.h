@@ -27,6 +27,19 @@ struct vss_sweep_config;
 struct vss_task;
 struct vss_device_config;
 
+/** @brief Callback for obtaining metadata from the device.
+ *
+ * This is called before run() with the same parameters and should provide
+ * information on how to interpret data pushed into the buffer using current
+ * settings.
+ *
+ * @param meta Pointer to structure that will be filled in.
+ * @param priv Pointer to the implementation specific data structure.
+ * @param task Pointer to task that will be started.
+ * @return VSS_OK on success or an error code otherwise. */
+typedef int (*vss_device_get_meta_t)(struct vss_data_meta* meta,
+		void* priv, const struct vss_task* task);
+
 /** @brief Callback for starting a spectrum sensing device.
  *
  * @param priv Pointer to the implementation specific data structure.
@@ -74,6 +87,8 @@ struct vss_device {
 	vss_device_run_t run;
 
 	vss_device_run_t resume;
+
+	vss_device_get_meta_t get_meta;
 
 	/** @brief Callback for obtaining device status. */
 	vss_device_status_t status;
@@ -158,6 +173,8 @@ int vss_device_status(const struct vss_device* device, char* buffer, size_t len)
 const struct calibration_point* vss_device_get_calibration(
 		const struct vss_device* device,
 		const struct vss_device_config* device_config);
+int vss_device_get_meta(const struct vss_device* device,
+		struct vss_data_meta* meta, const struct vss_task* task);
 
 int vss_device_config_add(const struct vss_device_config* device_config);
 const struct vss_device_config* vss_device_config_get(int device_id, int config_id);
