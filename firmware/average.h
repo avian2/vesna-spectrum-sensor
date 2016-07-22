@@ -23,6 +23,9 @@
 
 #include "buffer.h"
 
+/** @brief Scaling factor used for fixed point in vss_covariance() */
+#define VSS_AVERAGE_SCALE	8
+
 data_t vss_average(const data_t* buffer, size_t len);
 data_t vss_signal_power(const uint16_t* buffer, size_t len);
 int vss_covariance(const uint16_t* buffer, size_t len, int* cov, size_t l);

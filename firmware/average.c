@@ -58,7 +58,7 @@ data_t vss_signal_power(const uint16_t* buffer, size_t len)
 int vss_covariance(const uint16_t* buffer, size_t len, int* cov, size_t l)
 {
 	unsigned l0, n;
-	static const int k = 8;
+	static const int k = VSS_AVERAGE_SCALE;
 
 	/* max *bufer is 0x0fff */
 	/* max len is 0x8008 (32776) */
