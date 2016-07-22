@@ -11,7 +11,8 @@ TESTS =	test_buffer_run \
 	test_task_run \
 	test_calibration_run \
 	test_average_run \
-	test_eeprom_run
+	test_eeprom_run \
+	test_base64_run
 
 DEPS =	$(TESTS:test_%_run=%.d) \
 	$(TESTS:test_%_run=test_%.d) \
