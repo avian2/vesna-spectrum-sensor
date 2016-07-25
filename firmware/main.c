@@ -230,7 +230,10 @@ static void debug(char *ptr)
 
 static void command_help(void)
 {
-	printf( "VESNA spectrum sensing application\n\n"
+	printf( "VESNA spectrum sensing application\n\n\n"
+
+
+		"available commands:\n\n"
 
 		"help         print this help message\n"
 		"version      print out firmware version\n\n"
@@ -242,7 +245,8 @@ static void command_help(void)
 		"select channel CH config DEVICE,CONFIG\n"
 		"             sample channel CH using DEVICE and CONFIG pre-set\n"
 		"sample-on    start sampling channel\n"
-		"sample-off   stop sampling channel\n\n"
+		"sample-off   stop sampling channel\n"
+		"calib-off    turn off calibration (turned on after `select')\n\n"
 
 		"select channel START:STEP:STOP config DEVICE,CONFIG\n"
 		"             sweep channels from START to STOP stepping STEP\n"
@@ -252,17 +256,20 @@ static void command_help(void)
 		"average N    set number of hardware samples to average for one\n"
 		"             datapoint\n\n"
 
-		"calib-off    turn off calibration\n\n"
+		"terminate each command with ASCII line feed (\\n)\n\n\n"
 
-		"sweep data has the following format:\n"
-		"             TS timestamp DS power ... DE\n"
-		"where timestamp is time in seconds since sweep start and power is\n"
-		"received signal power for corresponding channel in dBm\n\n"
 
-		"sample data has the following format:\n"
-		"             TS timestamp DS sample ... DE\n"
-		"where timestamp is time in seconds since sweep start and sample is\n"
-		"signal sample in DAC digits\n");
+		"spectrum sweep data has the following format:\n"
+		"             TS ts CH ch SC sc DS pw_0 pw_1 pw_2 ... DE\n"
+		"where `ts' is time in seconds since sweep start and `pw_i/sc`\n"
+		"is received signal power in dBm for channel `ch+i`\n\n"
+
+		"channel sample data has the following format:\n"
+		"             TS ts CH ch SC sc BS xxxxxx ... BE\n"
+		"where `ts` is time in seconds since `sample-on` command, `ch`\n"
+		"is the sampled channel and `xx` are base64-encoded ADC samples.\n"
+		"Each 12-bit sample is encoded in two base64 symbols, most\n"
+		"significant first and scaled by scaling factor `sc`.\n");
 }
 
 static void command_list(void)
