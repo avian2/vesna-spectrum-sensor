@@ -7,6 +7,8 @@ import os
 import sys
 import datetime
 import time
+import gzip
+import shutil
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +52,14 @@ class Output:
 		if self.current_path != path:
 			if self.current_fh is not None:
 				self.current_fh.close()
+
+				gz_path = self.current_path + '.gz'
+
+				with open(self.current_path, 'rb') as f_in, gzip.open(gz_path, 'wb') as f_out:
+					shutil.copyfileobj(f_in, f_out)
+
+				os.unlink(self.current_path)
+
 				log.info("Rotating log file.")
 
 			self.current_path = path
