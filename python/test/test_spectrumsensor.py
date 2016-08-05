@@ -122,13 +122,14 @@ class TestConfigList(unittest.TestCase):
 			    time: 1 ms'''
 		), str(self.cl))
 
-from vesna.spectrumsensor import SpectrumSensor
+from vesna.spectrumsensor import SpectrumSensor, SpectrumSensorBase
 
 class TestSpectrumSensor(unittest.TestCase):
 
 	def test_unser_base64(self):
 		f = "TS 16.296 CH 660000 SC 1 BS gBgBgCgBgA BE".split()
-		td = SpectrumSensor._unser_base64(f)
+		s = SpectrumSensorBase()
+		td = s._unser_base64(f)
 
 		self.assertEquals(td.timestamp, 16.296)
 		self.assertEquals(td.channel, 660000)

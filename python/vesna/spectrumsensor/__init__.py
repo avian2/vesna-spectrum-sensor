@@ -253,7 +253,45 @@ class ConfigList:
 
 		return '\n'.join(lines)
 
-class SpectrumSensor:
+class SpectrumSensorBase(object):
+
+	def __init__(self):
+		self._make_base64_lookup()
+
+	def _make_base64_lookup(self):
+		self._base64_lookup = {}
+		for x in xrange(4096):
+			y = base64.b64encode('\x00'+struct.pack('>H', x))
+			assert y[:2] == 'AA'
+			y2 = y[2:]
+
+			self._base64_lookup[y2] = float(x)
+
+	def _unser_base64(self, fields):
+		if len(fields) != 9:
+			raise ValueError
+		if fields[8] != 'BE':
+			raise ValueError
+
+		scale = float(fields[5])
+
+		sweep = TimestampedData()
+		sweep.timestamp = float(fields[1])
+		sweep.channel = int(fields[3])
+
+		b64 = fields[7]
+
+		lookup = self._base64_lookup
+
+		assert scale == 1.
+		sweep.data = [
+			lookup[b64[n:n+2]]
+			for n in range(0, len(b64), 2)
+		]
+
+		return sweep
+
+class SpectrumSensor(SpectrumSensorBase):
 	"""Top-level abstraction of the attached spectrum sensing hardware."""
 
 	COMMAND_TIMEOUT = 0.5
@@ -264,6 +302,8 @@ class SpectrumSensor:
 
 		device -- path to the character device for the RS232 port with the spectrum sensor.
 		"""
+		super(SpectrumSensor, self).__init__()
+
 		if '://' in device:
 			self.comm = serial.serial_for_url(device, timeout=self.COMMAND_TIMEOUT)
 		else:
@@ -398,30 +438,6 @@ class SpectrumSensor:
 		sweep.timestamp = float(fields[1])
 		sweep.channel = int(fields[3])
 		sweep.data = map(lambda x:float(x)/scale, fields[7:-1])
-
-		return sweep
-
-	@classmethod
-	def _unser_base64(self, fields):
-		if len(fields) != 9:
-			raise ValueError
-		if fields[8] != 'BE':
-			raise ValueError
-
-		scale = float(fields[5])
-
-		sweep = TimestampedData()
-		sweep.timestamp = float(fields[1])
-		sweep.channel = int(fields[3])
-
-		b64 = fields[7]
-
-		sweep.data = [
-			struct.unpack('>H',
-				base64.b64decode('AA' + b64[n:n+2])[1:]
-			)[0]/scale
-			for n in range(0, len(b64), 2)
-		]
 
 		return sweep
 
