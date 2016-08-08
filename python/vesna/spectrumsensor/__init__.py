@@ -284,10 +284,14 @@ class SpectrumSensorBase(object):
 		lookup = self._base64_lookup
 
 		assert scale == 1.
-		sweep.data = [
-			lookup[b64[n:n+2]]
-			for n in range(0, len(b64), 2)
-		]
+
+		try:
+			sweep.data = [
+				lookup[b64[n:n+2]]
+				for n in range(0, len(b64), 2)
+			]
+		except KeyError:
+			raise ValueError
 
 		return sweep
 
