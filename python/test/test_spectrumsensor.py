@@ -14,19 +14,19 @@ class TestDeviceConfig(unittest.TestCase):
 
 	def test_get_full_sweep_config_1(self):
 		sc = self.dc.get_full_sweep_config()
-		self.assertEquals(sc.step_ch, 1)
+		self.assertEqual(sc.step_ch, 1)
 
 	def test_get_full_sweep_config_2(self):
 		sc = self.dc.get_full_sweep_config(step_hz=5)
-		self.assertEquals(sc.step_ch, 1)
+		self.assertEqual(sc.step_ch, 1)
 
 	def test_get_full_sweep_config_3(self):
 		sc = self.dc.get_full_sweep_config(step_hz=35)
-		self.assertEquals(sc.step_ch, 1)
+		self.assertEqual(sc.step_ch, 1)
 
 	def test_get_full_sweep_config_3(self):
 		sc = self.dc.get_full_sweep_config(step_hz=45)
-		self.assertEquals(sc.step_ch, 2)
+		self.assertEqual(sc.step_ch, 2)
 
 class TestSweepConfig(unittest.TestCase):
 	def setUp(self):
@@ -41,15 +41,15 @@ class TestSweepConfig(unittest.TestCase):
 		# 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 		sc = SweepConfig(self.dc, start_ch=0, stop_ch=10, step_ch=1)
 
-		self.assertEquals(sc.stop_ch, 10)
-		self.assertEquals(sc.stop_hz, 1009)
+		self.assertEqual(sc.stop_ch, 10)
+		self.assertEqual(sc.stop_hz, 1009)
 
 	def test_stop_hz_2(self):
 		# 0, 13, 26, 39, 52
 		sc = SweepConfig(self.dc, start_ch=0, stop_ch=50, step_ch=13)
 
-		self.assertEquals(sc.stop_ch, 50)
-		self.assertEquals(sc.stop_hz, 1039)
+		self.assertEqual(sc.stop_ch, 50)
+		self.assertEqual(sc.stop_hz, 1039)
 
 class TestConfigList(unittest.TestCase):
 	def setUp(self):
@@ -77,24 +77,24 @@ class TestConfigList(unittest.TestCase):
 		cl = self.cl
 
 		sc = cl.get_sweep_config(1500, 1600, 1)
-		self.assertEquals(0, sc.config.id)
+		self.assertEqual(0, sc.config.id)
 
 		sc = cl.get_sweep_config(2500, 2600, 1)
-		self.assertEquals(1, sc.config.id)
+		self.assertEqual(1, sc.config.id)
 
 		sc = cl.get_sweep_config(1500, 1600, 1, name="bar")
-		self.assertEquals(2, sc.config.id)
+		self.assertEqual(2, sc.config.id)
 
 		sc = cl.get_sweep_config(2500, 2600, 1, name="bar")
-		self.assertEquals(3, sc.config.id)
+		self.assertEqual(3, sc.config.id)
 
 	def test_str_empty(self):
 		cl = ConfigList()
 
-		self.assertEquals('', str(cl))
+		self.assertEqual('', str(cl))
 
 	def test_str(self):
-		self.assertEquals(dedent('''\
+		self.assertEqual(dedent('''\
 			device 0: test device
 			  channel config 0,0: foo 1
 			    base: 1000 Hz
@@ -131,37 +131,37 @@ class TestSpectrumSensor(unittest.TestCase):
 		s = SpectrumSensorBase()
 		td = s._unser_base64(f)
 
-		self.assertEquals(td.timestamp, 16.296)
-		self.assertEquals(td.channel, 660000)
-		self.assertEquals(td.data, [2049.0, 2049.0, 2050.0, 2049.0, 2048.0])
+		self.assertEqual(td.timestamp, 16.296)
+		self.assertEqual(td.channel, 660000)
+		self.assertEqual(td.data, [2049.0, 2049.0, 2050.0, 2049.0, 2048.0])
 
 	def test_unser_dec(self):
 		f = "TS 0.049 CH 660000 SC 100 DS -9782 -9805 -9759 -10016 -9660 DE".split()
 		td = SpectrumSensor._unser_dec(f)
 
-		self.assertEquals(td.timestamp, 0.049)
-		self.assertEquals(td.channel, 660000)
-		self.assertEquals(td.data, [-97.82, -98.05, -97.59, -100.16, -96.60])
+		self.assertEqual(td.timestamp, 0.049)
+		self.assertEqual(td.channel, 660000)
+		self.assertEqual(td.data, [-97.82, -98.05, -97.59, -100.16, -96.60])
 
 	def test_unser_old(self):
 		f = "TS 0.049 CH 660000 DS -97.82 -98.05 -97.59 -100.16 -96.60 DE".split()
 		td = SpectrumSensor._unser_old(f)
 
-		self.assertEquals(td.timestamp, 0.049)
-		self.assertEquals(td.channel, 660000)
-		self.assertEquals(td.data, [-97.82, -98.05, -97.59, -100.16, -96.60])
+		self.assertEqual(td.timestamp, 0.049)
+		self.assertEqual(td.channel, 660000)
+		self.assertEqual(td.data, [-97.82, -98.05, -97.59, -100.16, -96.60])
 
 from vesna.rftest import parse_test_kwargs
 
 class TestRFTest(unittest.TestCase):
 	def test_parse_test_kwargs_none(self):
-		self.assertEquals(parse_test_kwargs(None), {})
+		self.assertEqual(parse_test_kwargs(None), {})
 
 	def test_parse_test_kwargs_int(self):
-		self.assertEquals(parse_test_kwargs("a=1"), {'a': 1})
+		self.assertEqual(parse_test_kwargs("a=1"), {'a': 1})
 
 	def test_parse_test_kwargs_two_ints(self):
-		self.assertEquals(parse_test_kwargs("a=1,b=2"), {'a': 1, 'b': 2})
+		self.assertEqual(parse_test_kwargs("a=1,b=2"), {'a': 1, 'b': 2})
 
 	def test_parse_test_kwargs_list(self):
-		self.assertEquals(parse_test_kwargs("a=[1,2],b=2"), {'a': [1,2], 'b': 2})
+		self.assertEqual(parse_test_kwargs("a=[1,2],b=2"), {'a': [1,2], 'b': 2})

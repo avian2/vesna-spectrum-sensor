@@ -260,8 +260,8 @@ class SpectrumSensorBase(object):
 
 	def _make_base64_lookup(self):
 		self._base64_lookup = {}
-		for x in xrange(4096):
-			y = base64.b64encode('\x00'+struct.pack('>H', x))
+		for x in range(4096):
+			y = base64.b64encode(b'\x00'+struct.pack(b'>H', x)).decode('ascii')
 			assert y[:2] == 'AA'
 			y2 = y[2:]
 
@@ -314,14 +314,21 @@ class SpectrumSensor(SpectrumSensorBase):
 			self.comm = serial.Serial(device, 576000, timeout=self.COMMAND_TIMEOUT)
 		self.calibration = calibration
 
-		self.comm.write("sweep-off\n")
+		self._write("sweep-off\n")
 		self._wait_for_ok()
-		self.comm.write("sample-off\n")
+		self._write("sample-off\n")
 		self._wait_for_ok()
+
+	def _write(self, msg):
+		self.comm.write(msg.encode('ascii'))
+
+	def _readline(self):
+		msg = self.comm.readline()
+		return msg.decode('ascii')
 
 	def _wait_for_ok(self):
 		while True:
-			r = self.comm.readline()
+			r = self._readline()
 			if r == 'ok\n':
 				break
 			elif r.startswith("error:"):
@@ -335,14 +342,14 @@ class SpectrumSensor(SpectrumSensorBase):
 	def get_config_list(self):
 		"""Query and return the list of supported device configurations."""
 
-		self.comm.write("list\n")
+		self._write("list\n")
 
 		config_list = ConfigList()
 
 		device = None
 		config = None
 		while True:
-			line = self.comm.readline()
+			line = self._readline()
 			if not line:
 				break
 
@@ -377,12 +384,12 @@ class SpectrumSensor(SpectrumSensorBase):
 		sweep_config = SweepConfig(config, 0, 1, 1)
 		self._select_sweep_channel(sweep_config)
 
-		self.comm.write("status\n")
+		self._write("status\n")
 
 		resp = []
 
 		while True:
-			line = self.comm.readline()
+			line = self._readline()
 			if line:
 				resp.append(line)
 			else:
@@ -392,8 +399,8 @@ class SpectrumSensor(SpectrumSensorBase):
 
 	def get_fw_version(self):
 		"""Query and return version of the firmware on VESNA."""
-		self.comm.write("version\n")
-		resp = self.comm.readline()
+		self._write("version\n")
+		resp = self._readline()
 
 		if resp.startswith("error: unknown command:"):
 			resp = None
@@ -403,16 +410,16 @@ class SpectrumSensor(SpectrumSensorBase):
 		return resp
 
 	def _select_sweep_channel(self, sweep_config):
-		self.comm.write("select channel %d:%d:%d config %d,%d\n" % (
+		self._write("select channel %d:%d:%d config %d,%d\n" % (
 				sweep_config.start_ch, sweep_config.step_ch, sweep_config.stop_ch,
 				sweep_config.config.device.id, sweep_config.config.id))
 		self._wait_for_ok()
 
 		if not self.calibration:
-			self.comm.write("calib-off\n")
+			self._write("calib-off\n")
 			self._wait_for_ok()
 
-		self.comm.write("samples %d\n" % (
+		self._write("samples %d\n" % (
 				sweep_config.nsamples))
 		self._wait_for_ok()
 
@@ -425,7 +432,7 @@ class SpectrumSensor(SpectrumSensorBase):
 
 		sweep.timestamp = float(fields[1])
 		sweep.channel = int(fields[3])
-		sweep.data = map(float, fields[5:-1])
+		sweep.data = list(map(float, fields[5:-1]))
 
 		return sweep
 
@@ -441,14 +448,14 @@ class SpectrumSensor(SpectrumSensorBase):
 		sweep = TimestampedData()
 		sweep.timestamp = float(fields[1])
 		sweep.channel = int(fields[3])
-		sweep.data = map(lambda x:float(x)/scale, fields[7:-1])
+		sweep.data = list(map(lambda x:float(x)/scale, fields[7:-1]))
 
 		return sweep
 
 	def _iter_timestamps(self, num):
 		while True:
 			try:
-				line = self.comm.readline()
+				line = self._readline()
 			except select.error:
 				break
 			except serial.SerialException:
@@ -482,7 +489,7 @@ class SpectrumSensor(SpectrumSensorBase):
 					raise ValueError
 
 			except ValueError:
-				print "Ignoring corrupted line: %s" % (line,)
+				print("Ignoring corrupted line: %s" % (line,))
 			else:
 				yield sweep
 
@@ -504,7 +511,7 @@ class SpectrumSensor(SpectrumSensorBase):
 
 		self._select_sweep_channel(sweep_config)
 
-		self.comm.write("sample-on\n")
+		self._write("sample-on\n")
 
 		self.comm.timeout = self.DATA_TIMEOUT
 
@@ -514,7 +521,7 @@ class SpectrumSensor(SpectrumSensorBase):
 
 		self.comm.timeout = self.COMMAND_TIMEOUT
 
-		self.comm.write("sample-off\n")
+		self._write("sample-off\n")
 
 		self._wait_for_ok()
 
@@ -535,7 +542,7 @@ class SpectrumSensor(SpectrumSensorBase):
 
 		self._select_sweep_channel(sweep_config)
 
-		self.comm.write("sweep-on\n")
+		self._write("sweep-on\n")
 
 		self.comm.timeout = self.DATA_TIMEOUT
 
@@ -545,7 +552,7 @@ class SpectrumSensor(SpectrumSensorBase):
 
 		self.comm.timeout = self.COMMAND_TIMEOUT
 
-		self.comm.write("sweep-off\n")
+		self._write("sweep-off\n")
 
 		self._wait_for_ok()
 
