@@ -150,13 +150,13 @@ class SweepConfig:
 	def get_ch_list(self):
 		"""Return a list of channels covered by this configuration
 		"""
-		return range(self.start_ch, self.stop_ch, self.step_ch)
+		return list(range(self.start_ch, self.stop_ch, self.step_ch))
 
 	def get_hz_list(self):
 		"""Return a list of frequencies covered by this
 		configuration
 		"""
-		return map(self.config.ch_to_hz, self.get_ch_list())
+		return list(map(self.config.ch_to_hz, self.get_ch_list()))
 
 class SampleConfig(SweepConfig):
 	"""Frequency sweep configuration for a spectrum sensing device.
