@@ -24,8 +24,13 @@
 #include "dac.h"
 #include "vss.h"
 
+#if defined(DAC_BBGAIN_PIN) && defined(DAC_THRLVL_PIN)
+#	define HAVE_DAC
+#endif
+
 int vss_dac_init(void)
 {
+#ifdef HAVE_DAC
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
 		      GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, DAC_BBGAIN_PIN);
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
@@ -41,19 +46,24 @@ int vss_dac_init(void)
 	dac_enable(CHANNEL_2);
 
 	dac_set_trigger_source(DAC_CR_TSEL1_SW|DAC_CR_TSEL2_SW);
+#endif
 	return VSS_OK;
 }
 
 int vss_dac_set_bbgain(uint8_t gain)
 {
+#ifdef HAVE_DAC
 	dac_load_data_buffer_single(gain, RIGHT8, CHANNEL_1);
 	dac_software_trigger(CHANNEL_1);
+#endif
 	return VSS_OK;
 }
 
 int vss_dac_set_trigger(uint16_t thr)
 {
+#ifdef HAVE_DAC
 	dac_load_data_buffer_single(thr, RIGHT12, CHANNEL_2);
 	dac_software_trigger(CHANNEL_2);
+#endif
 	return VSS_OK;
 }
