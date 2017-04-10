@@ -51,6 +51,24 @@ class TestSweepConfig(unittest.TestCase):
 		self.assertEqual(sc.stop_ch, 50)
 		self.assertEqual(sc.stop_hz, 1039)
 
+	def test_get_ch_list(self):
+
+		sc = SweepConfig(self.dc, start_ch=0, stop_ch=10, step_ch=2)
+
+		r = sc.get_ch_list()
+
+		self.assertIsInstance(r, list)
+		self.assertEqual(r, [0, 2, 4, 6, 8])
+
+	def test_get_hz_list(self):
+
+		sc = SweepConfig(self.dc, start_ch=0, stop_ch=10, step_ch=2)
+
+		r = sc.get_hz_list()
+
+		self.assertIsInstance(r, list)
+		self.assertEqual(r, [1000, 1002, 1004, 1006, 1008])
+
 class TestConfigList(unittest.TestCase):
 	def setUp(self):
 		self.cl = ConfigList()
