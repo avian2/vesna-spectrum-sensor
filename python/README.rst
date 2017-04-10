@@ -11,13 +11,17 @@ Python interface.
 Installation
 ============
 
-To install system-wide, run::
+To install system-wide from the package index, run::
 
-   $ python setup.py install
+   $ pip install vesna-spectrumsensor
+
+To install system-wide from source, run::
+
+   $ pip install .
 
 To run provided unit tests, run::
 
-   $ python setup.py test
+   $ tox
 
 
 Usage
@@ -53,7 +57,7 @@ automated hardware tests using a USBTMC attached RF signal generator. Run
 License
 =======
 
-Copyright (C) 2015 SensorLab, Jozef Stefan Institute
+Copyright (C) 2017 SensorLab, Jozef Stefan Institute
 http://sensorlab.ijs.si
 
 This program is free software: you can redistribute it and/or modify
